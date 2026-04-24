@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans TC", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-cathay-green: #008d3e;
+  --color-cathay-light: #8ec31f;
+  --color-cathay-bg: #f4f9f4;
+}
+
+@layer base {
+  body {
+    @apply bg-[#f4f9f4] text-[#2d3a31] antialiased;
+  }
+}
+
+/* Cathay Tones Utilities */
+@utility bg-cathay-green {
+  background-color: #008d3e;
+}
+@utility text-cathay-green {
+  color: #008d3e;
+}
+@utility border-cathay-green {
+  border-color: #008d3e;
+}
+@utility bg-cathay-light {
+  background-color: #8ec31f;
+}
+@utility text-cathay-light {
+  color: #8ec31f;
+}
+
+.markdown-body {
+  @apply text-[#4A4A40] leading-relaxed;
+}
+
+.markdown-body h1 {
+  @apply text-2xl font-bold mb-4 text-[#5A5A40];
+}
+
+.markdown-body p {
+  @apply mb-4;
+}
