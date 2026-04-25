@@ -26,6 +26,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, boolean>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     setKnowledge(db.getKnowledge());
@@ -39,7 +40,11 @@ export default function App() {
       case 'pre-test': return <PreTestSection setView={setCurrentView} />;
       case 'checklist': return <VisitChecklist setView={setCurrentView} />;
       case 'post-test': return <PostTestSection setView={setCurrentView} />;
-      case 'admin': return <AdminPanel items={knowledge} setItems={setKnowledge} setView={setCurrentView} />;
+      case 'admin': 
+        if (!isAdmin) {
+          return <Dashboard setView={setCurrentView} />;
+        }
+        return <AdminPanel items={knowledge} setItems={setKnowledge} setView={setCurrentView} />;
       default: return <Dashboard setView={setCurrentView} />;
     }
   };
@@ -63,8 +68,20 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setCurrentView('admin')}
-            className="p-2 text-[#008d3e] hover:bg-[#8ec31f]/10 rounded-md transition-colors"
+            onClick={() => {
+              if (isAdmin) {
+                setCurrentView('admin');
+              } else {
+                const pin = window.prompt('【國泰管理端】請輸入管理密碼：');
+                if (pin === 'cgh888') { // Simple password
+                  setIsAdmin(true);
+                  setCurrentView('admin');
+                } else if (pin !== null) {
+                  alert('權限驗證失敗。');
+                }
+              }
+            }}
+            className={`p-2 rounded-md transition-colors ${isAdmin ? 'bg-[#008d3e] text-white' : 'text-[#008d3e] hover:bg-[#8ec31f]/10'}`}
             id="admin-button"
             title="管理後台"
           >
