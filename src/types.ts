@@ -141,28 +141,90 @@ export const PRE_QUIZ: Question[] = [
   {
     id: 'q1',
     type: 'multiple-choice',
-    text: '在宅急症照護目前主要針對哪三種感染？',
+    text: '在宅醫療照護（試辦計畫）中的急症收治主要針對哪三種感染症？',
     options: ['肺炎、尿路感染、軟組織感染', '腸胃炎、骨折、肺炎', '腦中風、糖尿病、氣喘', '流感、新冠、感冒'],
     correctAnswer: '肺炎、尿路感染、軟組織感染'
   },
   {
     id: 'q2',
     type: 'multiple-choice',
-    text: '哪一項不屬於 HOME BASIC 的評估範圍？',
-    options: ['Environment 環境安全', 'Income 收入狀況', 'Outlook 心理展望', 'Basic ADL 日常生活'],
+    text: '下列哪一項不屬於 HOME BASIC 居家評估之九大維度範疇？',
+    options: ['Environment 環境安全', 'Income 收入狀況', 'Outlook 心理與展望', 'Basic ADL 日常生活功能'],
     correctAnswer: 'Income 收入狀況'
+  },
+  {
+    id: 'q3',
+    type: 'multiple-choice',
+    text: '關於「一般居家醫療 (S1)」之定義，下列敘述何者正確？',
+    options: ['單純病況穩定、需定期醫療評估與基本處置', '病情較複雜，需多專業介入，包含藥事、護理、營養等', '以安寧緩和醫療或重症慢性病照護為主，需跨專業整合團隊持續介入', '病情極度危急，需要立即送至急診進行開刀與加護病房照護'],
+    correctAnswer: '單純病況穩定、需定期醫療評估與基本處置'
+  },
+  {
+    id: 'q4',
+    type: 'multiple-choice',
+    text: '居家醫療分類中，「整合式居家醫療 (S3)」之主要服務對象包含下列哪一項？',
+    options: ['行動完全自如之輕度感冒患者', '病情複雜、僅需單一藥師介入調劑者', '癌末、失智末期、神經退化末期、呼吸器依賴等', '僅限於年滿 18 歲但無任何慢性病者'],
+    correctAnswer: '癌末、失智末期、神經退化末期、呼吸器依賴等'
+  },
+  {
+    id: 'q5',
+    type: 'multiple-choice',
+    text: '關於在宅醫療照護「模式 C（急診個案）」之收案標準，下列何者正確？',
+    options: ['限巴氏量表（Barthel Index）小於 60 分之失能者，或因疾病特性而就醫極度不便者', '限巴氏量表大於 80 分且常規能獨立出門就醫者', '限無任何慢性病、且年齡在 65 歲以上之機構住民', '不限生理功能狀態，只要在急診室留觀滿 48 小時即可收案'],
+    correctAnswer: '限巴氏量表（Barthel Index）小於 60 分之失能者，或因疾病特性而就醫極度不便者'
   }
 ];
 
+export interface EvalDomainItem {
+  id: string;
+  label: string;
+}
+
+export const EVAL_DOMAINS: EvalDomainItem[] = [
+  { id: 'tech', label: '1. 科技整合能力（如：POCUS、遙測、遠距醫療設備）' },
+  { id: 'team', label: '2. 跨專業合作與團隊溝通' },
+  { id: 'comm', label: '3. 家庭與病人為中心的健康溝通' },
+  { id: 'system', label: '4. 系統思維與資源運用' },
+  { id: 'role', label: '5. 專業態度與醫療角色認同' }
+];
+
+export const DEEP_REFLECTION_DOMAINS = [
+  { id: 'tech', label: '科技整合' },
+  { id: 'team', label: '跨專業合作' },
+  { id: 'comm', label: '病人與家庭為中心的溝通' },
+  { id: 'system', label: '系統性思考與流程理解' },
+  { id: 'role', label: '專業精神與角色認同' }
+];
+
+export const DEEP_REFLECTION_QUESTIONS = [
+  { id: 'event', label: '今天與此領域相關的具體事件是什麼？' },
+  { id: 'thought', label: '這件事情讓你產生什麼觀察或想法（包含感受）？' },
+  { id: 'concept', label: '回頭看，你覺得這代表什麼？與醫療專業概念有何連結？' },
+  { id: 'better', label: '如果下一次遇到類似情況，你會如何做得更好？' }
+];
+
+export const EMOTION_ITEMS = [
+  { id: 'confidence', label: '信心' },
+  { id: 'uncertainty', label: '不確定感' },
+  { id: 'empathy', label: '同理心' },
+  { id: 'ethics', label: '倫理張力 (Ethical tension)' },
+  { id: 'overload', label: '認知負荷超載 (Cognitive overload)' }
+];
+
+export const EMOTION_FREQUENCY = [
+  { val: 1, label: '從未' },
+  { val: 2, label: '偶爾' },
+  { val: 3, label: '有時' },
+  { val: 4, label: '經常' },
+  { val: 5, label: '始終存在' }
+];
+
+// For backward compatibility and compiling
 export const CONFIDENCE_QUESTIONS: Question[] = [
-  { id: 'c1', type: 'scale', text: '我覺得我對在宅急症照護的法規與知識有充分了解。' },
+  { id: 'c1', type: 'scale', text: '我覺得我對在宅醫療照護的法規與知識有充分了解。' },
   { id: 'c2', type: 'scale', text: '我有信心能獨立完成 HOME BASIC 居家評估。' },
   { id: 'c3', type: 'scale', text: '我有信心能與病患及其家屬進行有效的溝通。' }
 ];
 
-export const REFLECTION_QUESTIONS: Question[] = [
-  { id: 'r1', type: 'text', text: '「我看見了什麼」：請簡述今日訪視的觀察。' },
-  { id: 'r2', type: 'text', text: '「我怎麼理解」：這些觀察對您有什麼臨床意義？' },
-  { id: 'r3', type: 'text', text: '對於五大能力（病人照護、溝通等），您覺得今日最有收穫的是哪一部分？' },
-  { id: 'r4', type: 'text', text: '「下一次我會如何做」：未來若有類似個案，您的行動計畫？' }
-];
+export const REFLECTION_QUESTIONS: Question[] = [];
+

@@ -30,10 +30,21 @@ import {
   Shield,
   Upload,
   Trash2,
+  AlertTriangle,
   Image as LucideImage
 } from 'lucide-react';
 import { db } from './services/store';
-import { KnowledgeItem, PRE_QUIZ, CONFIDENCE_QUESTIONS, REFLECTION_QUESTIONS } from './types';
+import { 
+  KnowledgeItem, 
+  PRE_QUIZ, 
+  CONFIDENCE_QUESTIONS, 
+  REFLECTION_QUESTIONS,
+  EVAL_DOMAINS,
+  DEEP_REFLECTION_DOMAINS,
+  DEEP_REFLECTION_QUESTIONS,
+  EMOTION_ITEMS,
+  EMOTION_FREQUENCY
+} from './types';
 import * as XLSX from 'xlsx';
 
 type View = 'dashboard' | 'knowledge' | 'prep' | 'pre-test' | 'checklist' | 'post-test' | 'admin';
@@ -42,6 +53,198 @@ const getConfidenceLabel = (val: any) => {
   if (!val) return '未填寫';
   return `${val} 分 (1-5)`;
 };
+
+const getFrequencyLabel = (val: any) => {
+  const item = EMOTION_FREQUENCY.find(f => f.val === Number(val));
+  return item ? item.label : '未填寫';
+};
+
+function HomeCareSubSection() {
+  const categories = [
+    {
+      id: 'S1',
+      title: '一般居家醫療',
+      define: '一般居家醫療',
+      desc: '單純病況穩定、需定期醫療評估與基本處置',
+      audience: '行動不便、高齡、慢性病者',
+      color: 'from-green-600 to-green-500',
+      borderColor: 'border-green-100',
+    },
+    {
+      id: 'S2',
+      title: '複雜居家醫療',
+      define: '複雜居家醫療',
+      desc: '病情較複雜，需多專業介入，包含藥事、護理、營養等',
+      audience: '多重共病、失能、需多重專業支持者',
+      color: 'from-emerald-600 to-emerald-500',
+      borderColor: 'border-emerald-100',
+    },
+    {
+      id: 'S3',
+      title: '整合式居家醫療',
+      define: '整合式居家醫療',
+      desc: '以安寧緩和醫療或重症慢性病照護為主，需跨專業整合團隊持續介入',
+      audience: '癌末、失智末期、神經退化末期、呼吸器依賴者等',
+      color: 'from-teal-600 to-teal-500',
+      borderColor: 'border-teal-100',
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-[#008d3e]/10 to-[#8ec31f]/10 p-5 rounded-2xl border border-[#008d3e]/15">
+        <h3 className="text-lg font-bold text-[#008d3e] flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#8ec31f] animate-pulse"></span>
+          居家醫療三大分類 (S1, S2, S3) 核心說明
+        </h3>
+        <p className="text-xs text-[#2d3a31]/75 mt-1 leading-relaxed">
+          依據病患之生理功能狀態及臨床需求，提供分級在宅整合照護計畫。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {categories.map((cat) => (
+          <div key={cat.id} className={`flex flex-col bg-white border ${cat.borderColor} rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden`}>
+            <div className={`bg-gradient-to-r ${cat.color} p-4 text-white flex justify-between items-center`}>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black bg-white/20 px-2.5 py-1 rounded-lg uppercase">{cat.id}</span>
+                <span className="font-extrabold text-sm">{cat.title}</span>
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black tracking-widest text-[#2d3a31]/40 uppercase">計畫定義</span>
+                  <p className="text-xs font-bold text-[#2d3a31]">{cat.define}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black tracking-widest text-emerald-600/60 uppercase">內容說明</span>
+                  <div className="bg-[#f4f9f4]/50 border border-emerald-500/10 p-2.5 rounded-lg flex items-start gap-2">
+                    <CheckCircle size={14} className="text-[#8ec31f] shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#2d3a31] leading-relaxed font-semibold">{cat.desc}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black tracking-widest text-orange-600/60 uppercase">收案服務對象</span>
+                  <div className="bg-orange-50/20 border border-orange-500/10 p-2.5 rounded-lg flex items-start gap-2">
+                    <Users size={14} className="text-orange-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#2d3a31] leading-relaxed font-semibold">{cat.audience}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ModuleHeaderBanner({
+  moduleId,
+  title,
+  desc,
+  icon,
+  customBanners,
+  onUploadBanner,
+  onClearBanner,
+}: {
+  moduleId: string;
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
+  const customImg = customBanners[moduleId];
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 1200;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          onUploadBanner(moduleId, dataUrl);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-[#008d3e]/15 shadow-xs group mb-6">
+      {customImg ? (
+        <div className="relative w-full h-44 sm:h-52 bg-gray-100">
+          <img 
+            src={customImg} 
+            alt={`${title} Banner`} 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-black/25 group-hover:bg-black/40 transition-all flex items-end p-6 justify-between">
+            <div className="text-white drop-shadow">
+              <span className="text-[10px] font-black tracking-widest bg-[#8ec31f] text-white px-2 py-0.5 rounded uppercase mb-1 inline-block">自訂 Banner 已啟用</span>
+              <h1 className="text-xl md:text-2xl font-black">{title}</h1>
+              <p className="text-xs text-white/90 mt-1 font-semibold">{desc}</p>
+            </div>
+            
+            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4 z-20">
+              <label className="text-xs bg-black/60 hover:bg-black/80 text-white font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 border border-white/20">
+                <Upload size={12} />
+                <span>更換 Banner</span>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+              <button
+                onClick={() => onClearBanner(moduleId)}
+                className="text-xs bg-red-650/80 hover:bg-red-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 border border-red-500/20"
+              >
+                <Trash2 size={12} />
+                <span>還原預設</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-[#008d3e] to-[#8ec31f] p-6 sm:p-8 text-white relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl border border-white/20 text-white hidden sm:block">
+              {icon}
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight">{title}</h1>
+              <p className="text-xs sm:text-sm text-white/90 font-medium mt-1">{desc}</p>
+            </div>
+          </div>
+
+          <div className="relative z-10 self-start sm:self-center">
+            <label className="text-xs bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+              <Upload size={13} />
+              <span>上傳自訂 Banner</span>
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            </label>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -60,6 +263,26 @@ export default function App() {
   });
   const [showExportModal, setShowExportModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+
+  const [customBanners, setCustomBanners] = useState<Record<string, string>>(() => {
+    return {
+      'module-1': localStorage.getItem('cgh_banner_module-1') || '',
+      'module-2': localStorage.getItem('cgh_banner_module-2') || '',
+      'module-3': localStorage.getItem('cgh_banner_module-3') || '',
+      'module-4': localStorage.getItem('cgh_banner_module-4') || '',
+      'module-5': localStorage.getItem('cgh_banner_module-5') || '',
+    };
+  });
+
+  const handleUploadBanner = (id: string, url: string) => {
+    localStorage.setItem(`cgh_banner_${id}`, url);
+    setCustomBanners(prev => ({ ...prev, [id]: url }));
+  };
+
+  const handleClearBanner = (id: string) => {
+    localStorage.removeItem(`cgh_banner_${id}`);
+    setCustomBanners(prev => ({ ...prev, [id]: '' }));
+  };
 
   useEffect(() => {
     setKnowledge(db.getKnowledge());
@@ -100,7 +323,7 @@ export default function App() {
       
       // 1. Overview sheet
       const overview = [
-        ['國泰綜合醫院在宅急症照護學習歷程彙整表'],
+        ['國泰綜合醫院在宅照護學習歷程彙整表'],
         [],
         ['核心資料項目', '填寫內容', '備註說明'],
         ['學員姓名 (Student Name)', name, '核對學員身分'],
@@ -122,10 +345,13 @@ export default function App() {
         ['一、參訪前測 - 知識與信心評估'],
         [],
         ['題目編號', '題目敘述', '您的作答', '標準答案 / 信心指標'],
-        ['Q1', '在宅急症照護目前主要針對哪三種感染？', preQuizAnswers['q1'] || '未填寫', '肺炎、尿路感染、軟組織感染'],
-        ['Q2', '哪一項不屬於 HOME BASIC 的評估範圍？', preQuizAnswers['q2'] || '未填寫', 'Income 收入狀況'],
+        ['Q1', '在宅醫療照護（試辦計畫）中的急症收治主要針對哪三種感染症？', preQuizAnswers['q1'] || '未填寫', '肺炎、尿路感染、軟組織感染'],
+        ['Q2', '下列哪一項不屬於 HOME BASIC 居家評估之九大維度範疇？', preQuizAnswers['q2'] || '未填寫', 'Income 收入狀況'],
+        ['Q3', '關於「一般居家醫療 (S1)」之定義，下列敘述何者正確？', preQuizAnswers['q3'] || '未填寫', '單純病況穩定、需定期醫療評估與基本處置'],
+        ['Q4', '居家醫療分類中，「整合式居家醫療 (S3)」之主要服務對象包含下列哪一項？', preQuizAnswers['q4'] || '未填寫', '癌末、失智末期、神經退化末期、呼吸器依賴等'],
+        ['Q5', '關於在宅醫療照護「模式 C（急診個案）」之收案標準，下列何者正確？', preQuizAnswers['q5'] || '未填寫', '限巴氏量表（Barthel Index）小於 60 分之失能者，或因疾病特性而就醫極度不便者'],
         [],
-        ['C1', '我覺得我對在宅急症照護的法規與知識有充分了解。', getConfidenceLabel(preQuizAnswers['c1']), '1-5 級分尺度評量'],
+        ['C1', '我覺得我對在宅醫療照護的法規與知識有充分了解。', getConfidenceLabel(preQuizAnswers['c1']), '1-5 級分尺度評量'],
         ['C2', '我有信心能獨立完成 HOME BASIC 居家評估。', getConfidenceLabel(preQuizAnswers['c2']), '1-5 級分尺度評量'],
         ['C3', '我有信心能與病患及其家屬進行有效的溝通。', getConfidenceLabel(preQuizAnswers['c3']), '1-5 級分尺度評量'],
       ];
@@ -159,20 +385,65 @@ export default function App() {
       // 4. Post-Reflection Sheet
       const postResult = results.filter(r => r.testId === 'post-reflection').pop();
       const postAnswers = postResult?.answers || {};
+
+      const getEvalLabel = (val: any) => {
+        if (!val) return '未填寫';
+        if (Number(val) === 1) return '1 (尚未)';
+        if (Number(val) === 5) return '5 (可在監督下獨立執行)';
+        return `${val} 分`;
+      };
       
-      const reflectionData = [
-        ['三、參訪後反思及 Kolb 學習環節記錄'],
+      const reflectionData: any[][] = [
+        ['三、在宅急症照護反思紀錄 (Hospital-at-Home reflection report)'],
         [],
-        ['題目編號／維度', '導引問題敘述', '學生填寫之反思與反饋心得'],
-        ['C1 (後測信心)', '我覺得我對在宅急症照護的法規與知識有充分了解。', getConfidenceLabel(postAnswers['c1'])],
+        ['【參訪後信心指標自評】 (1-5 級分尺度量評)'],
+        ['評估指標', '自我意向描述', '後測分數結果'],
+        ['C1 (後測信心)', '我覺得我對在宅醫療照護的法規與知識有充分了解。', getConfidenceLabel(postAnswers['c1'])],
         ['C2 (後測信心)', '我有信心能獨立完成 HOME BASIC 居家評估。', getConfidenceLabel(postAnswers['c2'])],
         ['C3 (後測信心)', '我有信心能與病患及其家屬進行有效的溝通。', getConfidenceLabel(postAnswers['c3'])],
         [],
-        ['R1 (觀察階段)', '「我看見了什麼」：請簡述今日訪視的觀察。', postAnswers['r1'] || '未填寫'],
-        ['R2 (理解階段)', '「我怎麼理解」：這些觀察對您有什麼臨床意義？', postAnswers['r2'] || '未填寫'],
-        ['R3 (能力評估)', '對於五大能力（病人照護、溝通等），您覺得今日最有收穫的是哪一部分？', postAnswers['r3'] || '未填寫'],
-        ['R4 (展望行動)', '「下一次我會如何做」：未來若有類似個案，您的行動計畫？', postAnswers['r4'] || '未填寫'],
+        ['【第一部分：五大領域自我評估】 (1分:尚未, 5分:可在監督下獨立執行)'],
+        ['評估領域', '自我評估得分與描述', '說明'],
+        ['1. 科技整合能力（如：POCUS、遙測、遠距醫療設備）', getEvalLabel(postAnswers['eval_tech']), '自我意向評量'],
+        ['2. 跨專業合作與團隊溝通', getEvalLabel(postAnswers['eval_team']), '自我意向評量'],
+        ['3. 家庭與病人為中心的健康溝通', getEvalLabel(postAnswers['eval_comm']), '自我意向評量'],
+        ['4. 系統思維與資源運用', getEvalLabel(postAnswers['eval_system']), '自我意向評量'],
+        ['5. 專業態度與醫療角色認同', getEvalLabel(postAnswers['eval_role']), '自我意向評量'],
+        [],
+        ['【第二部分：選擇領域進行深度反思】'],
+        ['反思領域', '問題導引', '您填寫的 reflection 反思詳述']
       ];
+
+      // Add deep reflections dynamically based on what was selected
+      const selected = postAnswers['selected_domains'] || ['tech', 'team', 'comm'];
+      selected.forEach((domId: string) => {
+        const domName = DEEP_REFLECTION_DOMAINS.find(d => d.id === domId)?.label || domId;
+        reflectionData.push(
+          [domName, '今天與此領域相關的具體事件是什麼？', postAnswers[`deep_${domId}_event`] || ''],
+          [domName, '這件事情讓你產生什麼觀察或想法（包含感受）？', postAnswers[`deep_${domId}_thought`] || ''],
+          [domName, '回頭看，你覺得這代表什麼？與醫療專業概念有何連結？', postAnswers[`deep_${domId}_concept`] || ''],
+          [domName, '如果下一次遇到類似情況，你會如何做得更好？', postAnswers[`deep_${domId}_better`] || '']
+        );
+      });
+
+      reflectionData.push(
+        [],
+        ['【第三部分：自由反思與最具挑戰片段】'],
+        ['自由描述題目', '詳細記錄內容', ''],
+        ['今天整體經驗中，最讓你印象深刻或感到挑戰的是什麼？為什麼？', postAnswers['free_reflection'] || '未填寫', ''],
+        [],
+        ['【第四部分：一句話總結醫師角色理解】'],
+        ['用一句話描述，今天的經驗如何改變或深化你對醫師角色的理解？', postAnswers['one_sentence_summary'] || '未填寫', ''],
+        [],
+        ['【第五部分：情緒與心理狀態檢視】 (評分尺度: 從未 -> 始終存在)'],
+        ['情緒/心理指標狀態', '感受頻率得分', '感受描述'],
+        ['信心', getFrequencyLabel(postAnswers['emotion_confidence']), ''],
+        ['不確定感', getFrequencyLabel(postAnswers['emotion_uncertainty']), ''],
+        ['同理心', getFrequencyLabel(postAnswers['emotion_empathy']), ''],
+        ['倫理張力 (Ethical tension)', getFrequencyLabel(postAnswers['emotion_ethics']), ''],
+        ['認知負荷超載 (Cognitive overload)', getFrequencyLabel(postAnswers['emotion_overload']), '']
+      );
+
       const wsReflection = XLSX.utils.aoa_to_sheet(reflectionData);
       XLSX.utils.book_append_sheet(wb, wsReflection, '4. 參訪後反思問卷');
       
@@ -182,15 +453,33 @@ export default function App() {
       wsChecklist['!cols'] = [{ wch: 20 }, { wch: 35 }, { wch: 80 }];
       wsReflection['!cols'] = [{ wch: 20 }, { wch: 45 }, { wch: 85 }];
       
-      // Save
-      XLSX.writeFile(wb, `國泰在宅醫療學習歷程-${name}-${date || '未填日期'}.xlsx`);
+      // Save - robust iframe safe blob execution
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+      const s2ab = (s: string) => {
+        const buf = new ArrayBuffer(s.length);
+        const view = new Uint8Array(buf);
+        for (let i = 0; i < s.length; i++) {
+          view[i] = s.charCodeAt(i) & 0xFF;
+        }
+        return buf;
+      };
+      
+      const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `國泰在宅醫療學習歷程-${name}-${date || '未填日期'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
       // Open modal
       setShowExportModal(true);
 
       // Auto trigger mail link fallback via standard href navigation
       const subject = `【國泰在宅醫療參訪】${name} 的學習心得與 HOME BASIC 評估核檢表 (病歷號: ${chartNumber}) - ${date || '未填日期'}`;
-      const body = `老師您好：\n\n我是國泰醫院培訓學生 ${name}。\n\n我已順利完成了在宅急症照護的參訪學習歷程，並填寫了完整的評估表單（病歷號：${chartNumber}）與反思問卷。\n\n隨信附上我所彙整的 Excel 學習歷程檔案（請將剛下載的「國泰在宅醫療學習歷程-${name}-${date}.xlsx」檔案附加於本信件中）。\n\n此致\n國泰綜合醫院 教學部/急診部\n\n---\n學生姓名：${name}\n病歷號：${chartNumber}\n填寫日期：${date}\n匯出系統：國泰在宅醫療數位學習平台`;
+      const body = `老師您好：\n\n我是國泰醫院培訓學生 ${name}。\n\n我已順利完成了在宅照護的參訪學習歷程，並填寫了完整的評估表單（病歷號：${chartNumber}）與反思問卷。\n\n隨信附上我所彙整的 Excel 學習歷程檔案（請將剛下載的「國泰在宅醫療學習歷程-${name}-${date}.xlsx」檔案附加於本信件中）。\n\n此致\n國泰綜合醫院 教學部/急診部\n\n---\n學生姓名：${name}\n病歷號：${chartNumber}\n填寫日期：${date}\n匯出系統：國泰在宅醫療數位學習平台`;
       
       setTimeout(() => {
         try {
@@ -222,11 +511,47 @@ export default function App() {
           handleExportAndEmail={handleExportAndEmail}
         />
       );
-      case 'knowledge': return <KnowledgeSection items={knowledge} setView={setCurrentView} />;
-      case 'prep': return <PrepSection setView={setCurrentView} />;
-      case 'pre-test': return <PreTestSection setView={setCurrentView} />;
-      case 'checklist': return <VisitChecklist setView={setCurrentView} />;
-      case 'post-test': return <PostTestSection setView={setCurrentView} />;
+      case 'knowledge': return (
+        <KnowledgeSection 
+          items={knowledge} 
+          setView={setCurrentView} 
+          customBanners={customBanners}
+          onUploadBanner={handleUploadBanner}
+          onClearBanner={handleClearBanner}
+        />
+      );
+      case 'prep': return (
+        <PrepSection 
+          setView={setCurrentView} 
+          customBanners={customBanners}
+          onUploadBanner={handleUploadBanner}
+          onClearBanner={handleClearBanner}
+        />
+      );
+      case 'pre-test': return (
+        <PreTestSection 
+          setView={setCurrentView} 
+          customBanners={customBanners}
+          onUploadBanner={handleUploadBanner}
+          onClearBanner={handleClearBanner}
+        />
+      );
+      case 'checklist': return (
+        <VisitChecklist 
+          setView={setCurrentView} 
+          customBanners={customBanners}
+          onUploadBanner={handleUploadBanner}
+          onClearBanner={handleClearBanner}
+        />
+      );
+      case 'post-test': return (
+        <PostTestSection 
+          setView={setCurrentView} 
+          customBanners={customBanners}
+          onUploadBanner={handleUploadBanner}
+          onClearBanner={handleClearBanner}
+        />
+      );
       case 'admin': 
         if (!isAdmin) {
           return (
@@ -326,6 +651,11 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      {/* Footer */}
+      <footer className="max-w-4xl mx-auto py-8 px-6 text-center text-xs text-[#2d3a31]/50 border-t border-[#008d3e]/10 mt-12 bg-white/40 rounded-t-xl">
+        2026 國泰綜合醫院教學部 數位科技暨網路資源中心
+      </footer>
+
       {/* Export Modal Explanation */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -340,6 +670,105 @@ export default function App() {
             <p className="text-sm text-[#2d3a31]/80 leading-relaxed">
               系統已為學員 <strong>{studentName}</strong> 彙整產生專屬的 Excel 學習歷程檔案（包含前測、家訪 HOME BASIC 紀錄及反思心得），並已自動在瀏覽器中啟動下載。
             </p>
+
+            {/* Sandbox Notice */}
+            <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 space-y-2">
+              <p className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                <AlertTriangle size={14} className="text-amber-500" />
+                <span>⚠️ 下載無反應或遭遇安全限制？ (沙箱保護提示)</span>
+              </p>
+              <p className="text-xs text-amber-900/80 leading-relaxed">
+                若您是在 <strong>AI Studio 預覽視窗</strong> 中，瀏覽器可能會安全阻擋砂箱 Iframe 下載。請點選畫面右上角 <strong>「在新分頁開啟 (Open in New Tab)」</strong>，在新開啟的完整網頁中重新點選匯出，即可正常下載 Excel！
+              </p>
+              <button
+                onClick={() => {
+                  const chartNumber = localStorage.getItem('cgh_patient_chart_number') || 'P123';
+                  const preResult = db.getResults().filter((r: any) => r.testId === 'pre-quiz').pop()?.answers || {};
+                  const chData = db.getChecklists().pop()?.items || {};
+                  const latestNotes = db.getChecklists().pop()?.notes || '無';
+                  const postResult = db.getResults().filter((r: any) => r.testId === 'post-reflection').pop()?.answers || {};
+
+                  const text = `【國泰在宅醫療學習歷程純文字備份】
+
+=== 1. 個人資料 ===
+學生姓名：${studentName}
+病人病歷號：${chartNumber}
+填寫日期：${visitDate}
+備份建檔時間：${new Date().toLocaleString()}
+
+=== 2. 參訪前測 ===
+Q1. 在宅醫療急症感染症主要針對：${preResult['q1'] || '未填寫'}
+Q2. 不屬於 HOME BASIC 範疇項目：${preResult['q2'] || '未填寫'}
+Q3. 一般居家醫療 S1 敘述：${preResult['q3'] || '未填寫'}
+Q4. 整合式居家醫療 S3 對象：${preResult['q4'] || '未填寫'}
+Q5. 急診個案模式 C 收案標準：${preResult['q5'] || '未填寫'}
+[學前自評信心分數]
+Q1. 充分了解在宅法規核心：${getConfidenceLabel(preResult['c1'])}
+Q2. 有信心能獨立完成 HOME BASIC 評估：${getConfidenceLabel(preResult['c2'])}
+Q3. 有信心能與病患及其家屬進行有效溝通：${getConfidenceLabel(preResult['c3'])}
+
+=== 3. 訪視中 HOME BASIC 實務評估 ===
+H - Health 健康狀態：${chData['health'] || '未填寫'}
+O - Outlook 心理/展望：${chData['outlook'] || '未填寫'}
+M - Medication 用藥狀況：${chData['medication'] || '未填寫'}
+E - Environment 環境安全：${chData['environment'] || '未填寫'}
+B - Basic ADL 生活功能：${chData['basicADL'] || '未填寫'}
+A - Access 輔具/近便：${chData['access'] || '未填寫'}
+S - Social 支持系統：${chData['social'] || '未填寫'}
+I - Instability 不穩定性：${chData['instability'] || '未填寫'}
+C - Caregiver 照護者：${chData['caregiver'] || '未填寫'}
+綜合臨床備註：${latestNotes}
+
+=== 4. 參訪後在宅急症照護反思紀錄 ===
+[參訪後信心指標自評]
+Q1. 充分了解在宅法規核心：${getConfidenceLabel(postResult['c1'])}
+Q2. 有信心能獨立完成 HOME BASIC 評估：${getConfidenceLabel(postResult['c2'])}
+Q3. 有信心能與病患及其家屬進行有效溝通：${getConfidenceLabel(postResult['c3'])}
+
+[一、五大領域自我評估] (1:尚未, 5:可在監督下獨立執行)
+1. 科技整合能力：${postResult['eval_tech'] || '未填寫'} 分
+2. 跨專業合作與團隊溝通：${postResult['eval_team'] || '未填寫'} 分
+3. 家庭與病人為中心的健康溝通：${postResult['eval_comm'] || '未填寫'} 分
+4. 系統思維與資源運用：${postResult['eval_system'] || '未填寫'} 分
+5. 專業態度與醫療角色認同：${postResult['eval_role'] || '未填寫'} 分
+
+[二、選擇領域深度反思]
+${(() => {
+  const selDomVec = postResult['selected_domains'] || ['tech', 'team', 'comm'];
+  return selDomVec.map((domId: string, idx: number) => {
+    const domLabelName = DEEP_REFLECTION_DOMAINS.find(d => d.id === domId)?.label || domId;
+    return `<${idx + 1}> 選擇之發揮與省思領域：${domLabelName}
+ - 今天與此領域相關的具體事件是什麼：${postResult[`deep_${domId}_event`] || '未填寫'}
+ - 這件事情讓你產生什麼觀察或想法（包含感受）：${postResult[`deep_${domId}_thought`] || '未填寫'}
+ - 回頭看代表什麼與醫療專業概念何種連結：${postResult[`deep_${domId}_concept`] || '未填寫'}
+ - 如果下一次遇到類似情況，你會如何做得更好：${postResult[`deep_${domId}_better`] || '未填寫'}
+`;
+  }).join('\n');
+})()}
+[三、自由反思]
+今天整體經驗中，最讓你印象深刻或感到挑戰的是什麼？為什麼：
+${postResult['free_reflection'] || '未填寫'}
+
+[四、一句話總結]
+用一句話描述，今天的經驗如何改變或深化你對醫師角色的理解：
+${postResult['one_sentence_summary'] || '未填寫'}
+
+[五、情緒與心理狀態檢視]
+ - 信心：${getFrequencyLabel(postResult['emotion_confidence'])}
+ - 不確定感：${getFrequencyLabel(postResult['emotion_uncertainty'])}
+ - 同理心：${getFrequencyLabel(postResult['emotion_empathy'])}
+ - 倫理張力 (Ethical tension)：${getFrequencyLabel(postResult['emotion_ethics'])}
+ - 認知負荷超載 (Cognitive overload)：${getFrequencyLabel(postResult['emotion_overload'])}
+`;
+                  navigator.clipboard.writeText(text);
+                  setCopySuccess('full_raw');
+                  setTimeout(() => setCopySuccess(null), 3000);
+                }}
+                className="w-full mt-1.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition shadow-sm border border-amber-700/20"
+              >
+                {copySuccess === 'full_raw' ? '✅ 全數資料已成功複製到剪貼簿！' : '📋 一鍵複製全套學習資料 (純文字備份，避免沙箱流失)'}
+              </button>
+            </div>
 
             <div className="bg-[#f4f9f4] p-4 rounded-xl border border-[#008d3e]/10 space-y-2">
               <p className="text-xs font-bold text-[#008d3e] flex items-center gap-1">
@@ -460,11 +889,11 @@ function Dashboard({
   handleExportAndEmail: (name: string, date: string) => void;
 }) {
   const cards = [
-    { id: 'module-1', title: '在宅知識庫', icon: <BookOpen className="text-[#008d3e]" />, desc: '在宅訓練：法規、適應症與模式', view: 'knowledge' as View, category: '必讀核心', completed: true },
-    { id: 'module-2', title: '訪視前準備', icon: <MapPin className="text-[#8ec31f]" />, desc: '注意事項與 HOME BASIC 介紹', view: 'prep' as View, category: '臨床必讀', completed: true },
-    { id: 'module-3', title: '前測：知識與信心', icon: <HelpCircle className="text-[#008d3e]" />, desc: '國泰參訪前自我檢核', view: 'pre-test' as View, category: '學生自檢', completed: learningStepStatus.preQuiz },
-    { id: 'module-4', title: '訪視中：HOME BASIC', icon: <CheckSquare className="text-[#8ec31f]" />, desc: '核檢表與 POCT 評估記錄', view: 'checklist' as View, category: '實踐記錄', completed: learningStepStatus.checklist },
-    { id: 'module-5', title: '後測：反思問卷', icon: <ClipboardCheck className="text-[#008d3e]" />, desc: '反思記錄與學習歷程整理', view: 'post-test' as View, category: '深度反思', completed: learningStepStatus.postReflection },
+    { id: 'module-1', title: '1. 在宅醫療知識庫', icon: <BookOpen className="text-[#008d3e]" />, desc: '在宅訓練：法規、適應症與模式', view: 'knowledge' as View, category: '必讀核心', completed: true },
+    { id: 'module-2', title: '2. 訪視前準備', icon: <MapPin className="text-[#8ec31f]" />, desc: '注意事項與 HOME BASIC 介紹', view: 'prep' as View, category: '臨床必讀', completed: true },
+    { id: 'module-3', title: '3. 前測：知識與信心', icon: <HelpCircle className="text-[#008d3e]" />, desc: '國泰參訪前自我檢核', view: 'pre-test' as View, category: '學生自檢', completed: learningStepStatus.preQuiz },
+    { id: 'module-4', title: '4. 訪視中：HOME BASIC', icon: <CheckSquare className="text-[#8ec31f]" />, desc: '核檢表與 POCT 評估記錄', view: 'checklist' as View, category: '實踐記錄', completed: learningStepStatus.checklist },
+    { id: 'module-5', title: '5. 後測：反思問卷', icon: <ClipboardCheck className="text-[#008d3e]" />, desc: '反思記錄與學習歷程整理', view: 'post-test' as View, category: '深度反思', completed: learningStepStatus.postReflection },
   ];
 
   return (
@@ -472,7 +901,7 @@ function Dashboard({
       <div className="bg-gradient-to-br from-[#008d3e] to-[#8ec31f] rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-[#008d3e]/20 transition-all duration-500">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold mb-2">在宅急症照護教育訓練</h2>
+            <h2 className="text-3xl font-bold mb-2">在宅照護教育訓練</h2>
             <p className="text-[#f4f9f4] max-w-md opacity-90 text-sm leading-relaxed">
               本平台專為國泰醫院在宅參訪之培訓學生/學員設計，引導您完成各階段學習，並可自動彙整為 Excel 歷程檔案。
             </p>
@@ -594,25 +1023,46 @@ function Dashboard({
 }
 
 // --- Knowledge Section ---
-function KnowledgeSection({ items, setView }: { items: KnowledgeItem[], setView: (v: View) => void }) {
-  const [activeTab, setActiveTab] = useState<string>('model');
+function KnowledgeSection({ 
+  items, 
+  setView,
+  customBanners,
+  onUploadBanner,
+  onClearBanner,
+}: { 
+  items: KnowledgeItem[]; 
+  setView: (v: View) => void;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<string>('home_care');
   const filtered = items.filter(item => item.category === activeTab);
 
   const tabs = [
-    { id: 'model', label: '在宅照護模式圖 (Model)' },
-    { id: 'law', label: '法規政策 (Law)' },
-    { id: 'indication', label: '收案適應症 (Indication)' },
-    { id: 'treatment', label: '治療策略 (Treatment)' },
-    { id: 'tool', label: '檢測工具 (Tool)' },
+    { id: 'home_care', label: '1. 居家醫療 (S1/S2/S3)' },
+    { id: 'model', label: '2. 在宅照護模式圖 (Model)' },
+    { id: 'law', label: '3. 法規政策 (Law)' },
+    { id: 'indication', label: '4. 收案適應症 (Indication)' },
+    { id: 'treatment', label: '5. 治療策略 (Treatment)' },
+    { id: 'tool', label: '6. 檢測工具 (Tool)' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-2">
         <button onClick={() => setView('dashboard')} className="text-[#008d3e] font-bold hover:underline text-sm flex items-center gap-1">← 回首頁</button>
-        <span className="text-[#008d3e]/30">/</span>
-        <h2 className="text-2xl font-bold text-[#008d3e]">在宅急症照護知識庫</h2>
       </div>
+
+      <ModuleHeaderBanner 
+        moduleId="module-1"
+        title="1. 在宅醫療知識庫"
+        desc="在宅訓練：法規、適應症與模式"
+        icon={<BookOpen size={24} />}
+        customBanners={customBanners}
+        onUploadBanner={onUploadBanner}
+        onClearBanner={onClearBanner}
+      />
 
       <div className="flex gap-1.5 p-1 bg-[#8ec31f]/10 rounded-xl overflow-x-auto border border-[#008d3e]/10 no-scrollbar">
         {tabs.map((tab) => (
@@ -638,6 +1088,8 @@ function KnowledgeSection({ items, setView }: { items: KnowledgeItem[], setView:
         >
           {activeTab === 'model' ? (
             <CareModelInfographic />
+          ) : activeTab === 'home_care' ? (
+            <HomeCareSubSection />
           ) : (
             <div className="space-y-4">
               {filtered.map(item => (
@@ -1058,26 +1510,44 @@ function CareModelInfographic() {
 }
 
 // --- Prep Section ---
-function PrepSection({ setView }: { setView: (v: View) => void }) {
+function PrepSection({ 
+  setView,
+  customBanners,
+  onUploadBanner,
+  onClearBanner,
+}: { 
+  setView: (v: View) => void;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
   const homeBasic = [
-    { char: 'H', title: 'Health 健康狀態', desc: '目、前病史、急性不適、疼痛情形、心跳、血壓、血 SpO2、生理檢測 POCT 定量數值。' },
-    { char: 'O', title: 'Outlook 心理/展望', desc: '病患意志、有無對生命的強烈失落、及對本次在宅醫療共享決策 (SDM) 同意性與看法。' },
-    { char: 'M', title: 'Medication 用藥狀況', desc: '是否有多重用藥重複、藥物交互作用，往診藥師送藥與服藥醫囑遵循程度。' },
-    { char: 'E', title: 'Environment 環境安全', desc: '家宅防跌無障礙配置、採光、生活通風與長照社會衛生保障情形。' },
-    { char: 'B', title: 'Basic ADL 生活功能', desc: '日常生活維持度，包括自行進食流體、能否獨立排泄或是否需外力翻身等。' },
-    { char: 'A', title: 'Access 輔具/近便', desc: '輪椅、助行器、以及遠端實地使用的醫療儀器、在宅床邊即時檢驗的檢出可及性。' },
-    { char: 'S', title: 'Social 支持系統', desc: '家屬及鄰里的實際介入照護頻率、在宅照護下的社政與長照福利諮詢連結度。' },
-    { char: 'I', title: 'Instability 不穩定性', desc: '病況惡化或再轉院/急診指標風險（qSOFA 器官衰竭表），是否可能突然生發跌倒、昏厥危險。' },
-    { char: 'C', title: 'Caregiver 照護者', desc: '主要家屬照護者在 24 小時在宅陪護之身心高壓狀態、是否有安排在宅長照喘息支援。' },
+    { char: 'H', title: 'Health 健康狀態', desc: '病歷個案前史、急性不適、疼痛情形、心跳、血壓、體溫、SpO2 等生理量測與定量數據。' },
+    { char: 'O', title: 'Outlook 心理/展望', desc: '病患精神志向、生命意志、有沒有嚴重失落感，以及對在宅醫療之共享決策 (SDM) 共識與接受度。' },
+    { char: 'M', title: 'Medication 用藥狀況', desc: '審核是否有多重藥物不當或重合開立，及往診中服藥的依從性。' },
+    { char: 'E', title: 'Environment 環境安全', desc: '家無障礙防滑設置、生活動線、採光，及社会福利或社區長照之支援。' },
+    { char: 'B', title: 'Basic ADL 生活功能', desc: '進食、排尿/解便自理度、扶行移動力 or 是否需要他人定時協助翻身。' },
+    { char: 'A', title: 'Access 輔具/近便', desc: '各式生活輔具、在宅使用的遠端監護設備以及手持式臨床檢驗之便利性。' },
+    { char: 'S', title: 'Social 支持系統', desc: '同住與非同住家屬的介入支持度、鄰里鄰托可及性及相關福利連結。' },
+    { char: 'I', title: 'Instability 不穩定性', desc: '是否有近期重跌昏迷或生命徵象急性轉差傾向（qSOFA評量等急速惡化風險）。' },
+    { char: 'C', title: 'Caregiver 照護者', desc: '主要隨侍家屬的每日身心情緒承載限度，以及在宅長照喘息資源之諮詢與調配度。' }
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
         <button onClick={() => setView('dashboard')} className="text-[#008d3e] font-bold hover:underline text-sm flex items-center gap-1">← 回首頁</button>
-        <span className="text-[#008d3e]/30">/</span>
-        <h2 className="text-2xl font-bold text-[#008d3e]">訪視前準備與注意事項</h2>
       </div>
+
+      <ModuleHeaderBanner 
+        moduleId="module-2"
+        title="2. 訪視前準備"
+        desc="注意事項與 HOME BASIC 介紹"
+        icon={<MapPin size={24} />}
+        customBanners={customBanners}
+        onUploadBanner={onUploadBanner}
+        onClearBanner={onClearBanner}
+      />
 
       <div className="bg-white border-l-4 border-[#008d3e] p-5 rounded-r-lg shadow-sm border border-[#008d3e]/10">
         <div className="flex items-center gap-2 mb-3 text-[#008d3e] font-bold">
@@ -1085,8 +1555,8 @@ function PrepSection({ setView }: { setView: (v: View) => void }) {
           <span>國泰醫院急急症出發前提醒</span>
         </div>
         <ul className="list-disc list-inside text-[#2d3a31]/80 text-sm space-y-2 leading-relaxed">
-          <li>請確保隨身通訊設備 (Line) 電量充足，隨時保持與 24h Call Center 聯防網絡連線。</li>
-          <li>與家長/病人對聯確認往診到府時間，主動確認是否需配置/攜帶 ASUS 遠端 Telehealth 設備。</li>
+          <li>請確保隨身通訊設備電量充足。</li>
+          <li>與家長/病人確認訪視時間，主動確認是否需攜帶遠端 Telehealth 設備。</li>
           <li>攜有必要的臨床隨身藥包、POCT 檢測器、手持式超音波等要件。</li>
           <li>嚴守個人防範操作、攜帶速乾洗手劑，落實嚴格的無菌無菌防範操作。</li>
         </ul>
@@ -1119,7 +1589,17 @@ function PrepSection({ setView }: { setView: (v: View) => void }) {
 }
 
 // --- Pre-Test Section ---
-function PreTestSection({ setView }: { setView: (v: View) => void }) {
+function PreTestSection({ 
+  setView,
+  customBanners,
+  onUploadBanner,
+  onClearBanner,
+}: { 
+  setView: (v: View) => void;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
   const [step, setStep] = useState<'quiz' | 'confidence'>('quiz');
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [finished, setFinished] = useState(false);
@@ -1160,72 +1640,98 @@ function PreTestSection({ setView }: { setView: (v: View) => void }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
-      {step === 'quiz' ? (
-        <>
-          <div className="border-b border-[#008d3e]/10 pb-4">
-            <h2 className="text-2xl font-bold text-[#008d3e]">參訪前知識測驗</h2>
-            <p className="text-xs text-gray-500 mt-1">出發前先確認您對在宅急症核心法規的掌握</p>
-          </div>
-          <div className="space-y-6">
-            {PRE_QUIZ.map((q, i) => (
-              <div key={q.id} className="space-y-3">
-                <p className="font-bold text-[#2d3a31] text-sm">{i+1}. {q.text}</p>
-                <div className="space-y-2">
-                  {q.options?.map(opt => (
-                    <label key={opt} className="flex items-center gap-3 p-4 border border-[#008d3e]/10 rounded-lg hover:bg-[#f4f9f4] cursor-pointer transition shadow-sm">
-                      <input 
-                        type="radio" 
-                        name={q.id} 
-                        value={opt} 
-                        checked={answers[q.id] === opt}
-                        onChange={(e) => setAnswers({...answers, [q.id]: e.target.value})}
-                        className="w-4 h-4 text-[#008d3e] accent-[#008d3e]"
-                      />
-                      <span className="text-[#2d3a31] text-sm">{opt}</span>
-                    </label>
-                  ))}
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-2">
+        <button onClick={() => setView('dashboard')} className="text-[#008d3e] font-bold hover:underline text-sm flex items-center gap-1">← 回首頁</button>
+      </div>
+
+      <ModuleHeaderBanner 
+        moduleId="module-3"
+        title="3. 前測：知識與信心"
+        desc="國泰參訪前自我檢核"
+        icon={<HelpCircle size={24} />}
+        customBanners={customBanners}
+        onUploadBanner={onUploadBanner}
+        onClearBanner={onClearBanner}
+      />
+
+      <div className="max-w-2xl mx-auto space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
+        {step === 'quiz' ? (
+          <>
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <h2 className="text-2xl font-bold text-[#008d3e]">參訪前知識測驗</h2>
+              <p className="text-xs text-gray-500 mt-1">出發前先確認您對在宅急症核心法規的掌握</p>
+            </div>
+            <div className="space-y-6">
+              {PRE_QUIZ.map((q, i) => (
+                <div key={q.id} className="space-y-3">
+                  <p className="font-bold text-[#2d3a31] text-sm">{i + 1}. {q.text}</p>
+                  <div className="space-y-2">
+                    {q.options?.map(opt => (
+                      <label key={opt} className="flex items-center gap-3 p-4 border border-[#008d3e]/10 rounded-lg hover:bg-[#f4f9f4] cursor-pointer transition shadow-sm">
+                        <input 
+                          type="radio" 
+                          name={q.id} 
+                          value={opt} 
+                          checked={answers[q.id] === opt}
+                          onChange={(e) => setAnswers({...answers, [q.id]: e.target.value})}
+                          className="w-4 h-4 text-[#008d3e] accent-[#008d3e]"
+                        />
+                        <span className="text-[#2d3a31] text-sm">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <button onClick={handleQuizSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold hover:bg-[#007031] transition-colors shadow-md text-sm">下一步：信心自評</button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="border-b border-[#008d3e]/10 pb-4">
-            <h2 className="text-2xl font-bold text-[#008d3e]">參訪前信心指標自評</h2>
-            <p className="text-xs text-[#2d3a31]/60 italic font-semibold mt-1">請依據 1-5 級分對應作答 (1:極無信心, 5:極有信心)</p>
-          </div>
-          <div className="space-y-6">
-            {CONFIDENCE_QUESTIONS.map((q) => (
-              <div key={q.id} className="space-y-3">
-                <p className="font-bold text-[#2d3a31] text-sm leading-relaxed">{q.text}</p>
-                <div className="flex justify-between gap-1.5 md:gap-2">
-                  {[1, 2, 3, 4, 5].map(val => (
-                    <button
-                      key={val}
-                      onClick={() => setAnswers({...answers, [q.id]: val})}
-                      className={`flex-1 py-3.5 rounded-lg border border-[#008d3e]/10 font-bold transition text-sm ${
-                        answers[q.id] === val ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-md' : 'hover:bg-[#8ec31f]/10 bg-gray-50 text-[#2d3a31]/60'
-                      }`}
-                    >
-                      {val}
-                    </button>
-                  ))}
+              ))}
+              <button onClick={handleQuizSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold hover:bg-[#007031] transition-colors shadow-md text-sm">下一步：信心自評</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <h2 className="text-2xl font-bold text-[#008d3e]">參訪前信心指標自評</h2>
+              <p className="text-xs text-[#2d3a31]/60 italic font-semibold mt-1">請依據 1-5 級分對應作答 (1:極無信心, 5:極有信心)</p>
+            </div>
+            <div className="space-y-6">
+              {CONFIDENCE_QUESTIONS.map((q) => (
+                <div key={q.id} className="space-y-3">
+                  <p className="font-bold text-[#2d3a31] text-sm leading-relaxed">{q.text}</p>
+                  <div className="flex justify-between gap-1.5 md:gap-2">
+                    {[1, 2, 3, 4, 5].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setAnswers({...answers, [q.id]: val})}
+                        className={`flex-1 py-3.5 rounded-lg border border-[#008d3e]/10 font-bold transition text-sm ${
+                          answers[q.id] === val ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-md' : 'hover:bg-[#8ec31f]/10 bg-gray-50 text-[#2d3a31]/60'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <button onClick={handleConfidenceSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm">提交測驗並開啟訪視</button>
-          </div>
-        </>
-      )}
+              ))}
+              <button onClick={handleConfidenceSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm">提交測驗並開啟訪視</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-// --- Visit Checklist ---
-function VisitChecklist({ setView }: { setView: (v: View) => void }) {
+// --- Visit Checklist Section ---
+function VisitChecklist({ 
+  setView,
+  customBanners,
+  onUploadBanner,
+  onClearBanner,
+}: { 
+  setView: (v: View) => void;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
   const [data, setData] = useState<Record<string, string>>({
     health: '', outlook: '', medication: '', environment: '',
     basicADL: '', access: '', social: '', instability: '', caregiver: ''
@@ -1262,7 +1768,7 @@ function VisitChecklist({ setView }: { setView: (v: View) => void }) {
   if (saved) {
     return (
       <div className="text-center py-12 space-y-6 bg-white border border-[#008d3e]/10 rounded-2xl p-8 max-w-xl mx-auto shadow-sm">
-        <div className="inline-block p-4 bg-[#f4f9f4] text-[#008d3e] rounded-full mb-2 shadow-sm border border-[#008d3e]/10 animate-pulse">
+        <div className="inline-block p-4 bg-[#f4f9f4] text-[#008d3e] rounded-full mb-2 shadow-sm border border-[#008d3e]/10">
           <CheckCircle size={48} />
         </div>
         <h2 className="text-2xl font-bold text-[#008d3e]">訪視評估紀錄已成功儲存</h2>
@@ -1271,7 +1777,7 @@ function VisitChecklist({ setView }: { setView: (v: View) => void }) {
         </p>
         <button 
           onClick={() => setView('post-test')}
-          className="bg-[#008d3e] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm"
+          className="bg-[#008d3e] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm animate-pulse"
         >
           前往最後反思回饋
         </button>
@@ -1280,148 +1786,531 @@ function VisitChecklist({ setView }: { setView: (v: View) => void }) {
   }
 
   return (
-    <div className="space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#008d3e]/10 pb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#008d3e]">訪視實務：HOME BASIC 臨床評估</h2>
-          <p className="text-xs text-[#2d3a31]/60 mt-1">請在此詳實紀錄您與國泰醫療往診時對在宅住院患者({patientId})之家庭觀察</p>
-        </div>
-        <div className="text-xs font-bold text-[#008d3e] bg-[#8ec31f]/10 px-3.5 py-1.5 rounded-full border border-[#008d3e]/15 self-start">患者ID：{patientId}</div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-2">
+        <button onClick={() => setView('dashboard')} className="text-[#008d3e] font-bold hover:underline text-sm flex items-center gap-1">← 回首頁</button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {homeBasic.map((item) => (
-          <div key={item.key} className="space-y-2">
-            <label className="block font-bold text-[#2d3a31] text-sm">{item.label}</label>
-            <textarea 
-              value={data[item.key]}
-              onChange={(e) => setData({...data, [item.key]: e.target.value})}
-              className="w-full p-4 bg-[#f4f9f4]/15 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] text-sm transition-shadow shadow-sm placeholder:text-[#2d3a31]/30"
-              placeholder={`請輸入關於 ${item.label} 的到府實地觀察與細部記錄細節...`}
-              rows={2}
-            />
-          </div>
-        ))}
+      <ModuleHeaderBanner 
+        moduleId="module-4"
+        title="4. 訪視中：HOME BASIC"
+        desc="核檢表與 POCT 評估記錄"
+        icon={<CheckSquare size={24} />}
+        customBanners={customBanners}
+        onUploadBanner={onUploadBanner}
+        onClearBanner={onClearBanner}
+      />
 
-        <div className="pt-4 space-y-2 border-t border-[#008d3e]/10">
-          <label className="block font-bold text-[#2d3a31] text-sm">綜合臨床備註 (如：床側 POCT 或餘尿超音波之數據紀錄)</label>
-          <textarea 
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full p-4 bg-[#f4f9f4]/15 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] text-sm transition-shadow shadow-sm placeholder:text-[#2d3a31]/30"
-            placeholder="補充其它需要附註之在宅醫療細節、POCT CRP / pH / 滲透壓量測數據等臨床紀錄..."
-            rows={3}
-          />
+      <div className="space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#008d3e]/10 pb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#008d3e]">訪視實務：HOME BASIC 臨床評估</h2>
+            <p className="text-xs text-[#2d3a31]/60 mt-1">請在此詳實紀錄您與國泰醫療往診時對在宅住院患者({patientId})之家庭觀察</p>
+          </div>
+          <div className="text-xs font-bold text-[#008d3e] bg-[#8ec31f]/10 px-3.5 py-1.5 rounded-full border border-[#008d3e]/15 self-start">患者ID：{patientId}</div>
         </div>
 
-        <button 
-          onClick={handleSave}
-          className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#007031] transition shadow-lg shadow-[#008d3e]/20 text-sm"
-        >
-          儲存國泰訪視紀錄
-        </button>
+        <div className="grid grid-cols-1 gap-6">
+          {homeBasic.map((item) => (
+            <div key={item.key} className="space-y-2">
+              <label className="block font-bold text-[#2d3a31] text-sm">{item.label}</label>
+              <textarea 
+                value={data[item.key] || ''}
+                onChange={(e) => setData({...data, [item.key]: e.target.value})}
+                className="w-full p-4 bg-[#f4f9f4]/15 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] text-sm transition-shadow shadow-sm placeholder:text-[#2d3a31]/30"
+                placeholder={`請輸入關於 ${item.label} 的到府實地觀察與細部記錄細節...`}
+                rows={2}
+              />
+            </div>
+          ))}
+
+          <div className="pt-4 space-y-2 border-t border-[#008d3e]/10">
+            <label className="block font-bold text-[#2d3a31] text-sm">綜合臨床備註 (如：床側 POCT 或餘尿超音波之數據紀錄)</label>
+            <textarea 
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full p-4 bg-[#f4f9f4]/15 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] text-sm transition-shadow shadow-sm placeholder:text-[#2d3a31]/30"
+              placeholder="補充其它需要附註之在宅醫療細節、POCT CRP / pH / 滲透壓量測數據等臨床紀錄..."
+              rows={3}
+            />
+          </div>
+
+          <button 
+            onClick={handleSave}
+            className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#007031] transition shadow-lg shadow-[#008d3e]/20 text-sm"
+          >
+            儲存國泰訪視紀錄
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// --- Post-Test Section ---
-function PostTestSection({ setView }: { setView: (v: View) => void }) {
-  const [step, setStep] = useState<'confidence' | 'reflection'>('confidence');
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+// --- Post-Test 反思問卷 ---
+function PostTestSection({ 
+  setView,
+  customBanners,
+  onUploadBanner,
+  onClearBanner
+}: { 
+  setView: (v: View) => void;
+  customBanners: Record<string, string>;
+  onUploadBanner: (id: string, url: string) => void;
+  onClearBanner: (id: string) => void;
+}) {
+  const [subStep, setSubStep] = useState(1);
+  const [answers, setAnswers] = useState<Record<string, any>>({
+    selected_domains: [],
+  });
+  const [activeReflectionTab, setActiveReflectionTab] = useState<string>('');
   const [finished, setFinished] = useState(false);
 
-  const handleConfidenceSubmit = () => {
-    setStep('reflection');
+  // Sync active tab when selected domains change
+  useEffect(() => {
+    if (answers.selected_domains && answers.selected_domains.length > 0) {
+      if (!answers.selected_domains.includes(activeReflectionTab)) {
+        setActiveReflectionTab(answers.selected_domains[0]);
+      }
+    } else {
+      setActiveReflectionTab('');
+    }
+  }, [answers.selected_domains]);
+
+  const handleDomainToggle = (domId: string) => {
+    const list = answers.selected_domains || [];
+    let updatedList;
+    if (list.includes(domId)) {
+      updatedList = list.filter((id: string) => id !== domId);
+    } else {
+      if (list.length >= 3) {
+        alert('最多僅能選擇 3 個領域進行深度反思');
+        return;
+      }
+      updatedList = [...list, domId];
+    }
+    setAnswers({ ...answers, selected_domains: updatedList });
   };
 
-  const handleReflectionSubmit = () => {
-    const sName = localStorage.getItem('cgh_student_name') || 'test-user';
-    db.saveResult({
-      userId: sName,
-      testId: 'post-reflection',
-      answers,
-      timestamp: Date.now()
-    });
-    setFinished(true);
+  const handleBack = () => {
+    if (subStep > 1) {
+      setSubStep(subStep - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (subStep === 1) {
+      if (!answers.c1 || !answers.c2 || !answers.c3) {
+        alert('請完成本頁所有信心自評題項再繼續。');
+        return;
+      }
+    } else if (subStep === 2) {
+      const missing = EVAL_DOMAINS.some(dom => !answers[`eval_${dom.id}`]);
+      if (missing) {
+        alert('請完成本頁所有五大領域之量化評估再繼續。');
+        return;
+      }
+    } else if (subStep === 3) {
+      const selected = answers.selected_domains || [];
+      if (selected.length === 0) {
+        alert('請至少勾選 1 個領域進行深度反思。');
+        return;
+      }
+      let incomplete = false;
+      selected.forEach((domId: string) => {
+        DEEP_REFLECTION_QUESTIONS.forEach(q => {
+          if (!answers[`deep_${domId}_${q.id}`]?.trim()) {
+            incomplete = true;
+          }
+        });
+      });
+      if (incomplete) {
+        alert('請詳細填寫所有已勾選領域的深度反思札記。');
+        return;
+      }
+    } else if (subStep === 4) {
+      if (!answers.free_reflection?.trim() || !answers.one_sentence_summary?.trim()) {
+        alert('請填寫印象最深刻事件與一句話總結。');
+        return;
+      }
+    } else if (subStep === 5) {
+      const missing = EMOTION_ITEMS.some(item => !answers[`emotion_${item.id}`]);
+      if (missing) {
+        alert('請完成所有情緒與心理檢視題項。');
+        return;
+      }
+
+      const sName = localStorage.getItem('cgh_student_name') || 'test-user';
+      db.saveResult({
+        userId: sName,
+        testId: 'post-reflection',
+        answers,
+        timestamp: Date.now()
+      });
+      setFinished(true);
+      return;
+    }
+    
+    setSubStep(subStep + 1);
   };
 
   if (finished) {
     return (
       <div className="text-center py-12 space-y-6 bg-white border border-[#008d3e]/10 rounded-2xl p-8 max-w-xl mx-auto shadow-sm">
-        <div className="inline-block p-4 bg-[#f4f9f4] text-[#008d3e] rounded-full mb-2 shadow-sm border border-[#008d3e]/10 animate-bounce">
-          <BarChart size={48} />
+        <div className="inline-block p-4 bg-[#f4f9f4] text-[#008d3e] rounded-full mb-2 shadow-sm border border-[#008d3e]/10">
+          <CheckCircle size={48} className="animate-bounce" />
         </div>
-        <h2 className="text-2xl font-bold text-[#008d3e]">學習歷程已圓滿完成！</h2>
+        <h2 className="text-2xl font-bold text-[#008d3e]">反思問卷已成功提交！</h2>
         <p className="text-[#2d3a31]/60 text-sm max-w-sm mx-auto leading-relaxed">
-          非常感謝您的深度思考與高質量反思，這將是發展您為稱職醫事人員自我人格（PIF）的重要核心！請點選下方返回首頁，並在首頁點選「彙整 Excel」寄信送交您的成果給老師。
+          非常感謝您的全力參與！您已完結本套「國泰急症在宅醫療」所有研習單元、訪視記錄與反思歷程。
         </p>
-        <button 
-          onClick={() => setView('dashboard')}
-          className="bg-[#008d3e] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm"
-        >
-          回到首頁彙整 Excel 成果
-        </button>
+        <div className="pt-2">
+          <button 
+            onClick={() => setView('dashboard')}
+            className="bg-[#008d3e] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm"
+          >
+            返回學習主頁 (點擊下載完整歷程 PDF)
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
-      {step === 'confidence' ? (
-        <>
-          <div className="border-b border-[#008d3e]/10 pb-4">
-            <h2 className="text-2xl font-bold text-[#008d3e]">在宅參訪後信心評核</h2>
-            <p className="text-xs text-gray-500 mt-1">參訪後自檢，評分 1-5 分 (1:非常不合適/無信心, 5:極度有信心)</p>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-2">
+        <button onClick={() => setView('dashboard')} className="text-[#008d3e] font-bold hover:underline text-sm flex items-center gap-1">← 回首頁</button>
+      </div>
+
+      <ModuleHeaderBanner 
+        moduleId="module-5"
+        title="5. 後測：反思問卷"
+        desc="反思記錄與學習歷程整理"
+        icon={<ClipboardCheck size={24} />}
+        customBanners={customBanners}
+        onUploadBanner={onUploadBanner}
+        onClearBanner={onClearBanner}
+      />
+
+      <div className="max-w-2xl mx-auto space-y-8 bg-white border border-[#008d3e]/10 rounded-2xl p-8 shadow-sm">
+        
+        {/* SUBSTEP 1: 參訪後信心自評 */}
+        {subStep === 1 && (
+          <div className="space-y-6" id="step-confidence-assessment">
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <span className="text-[10px] font-black tracking-widest bg-[#008d3e]/10 text-[#008d3e] px-2.5 py-1 rounded-full uppercase">信心自評</span>
+              <h3 className="text-xl font-bold text-[#008d3e] mt-2">在宅醫療參訪後信心自評</h3>
+              <p className="text-xs text-[#2d3a31]/60 mt-1 leading-relaxed">
+                請根據您今天實際參與病人與家屬的在宅醫療急症照護經驗，與參訪前的心境拉平對照，重新評估您目前的信心程度：
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {CONFIDENCE_QUESTIONS.map((q) => (
+                <div key={q.id} className="space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100" id={`post-conf-${q.id}`}>
+                  <p className="font-bold text-[#2d3a31] text-xs leading-relaxed">{q.text}</p>
+                  <div className="flex justify-between gap-1.5 md:gap-2">
+                    {[1, 2, 3, 4, 5].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setAnswers({ ...answers, [q.id]: val })}
+                        className={`flex-1 py-3 rounded-lg border font-bold text-xs transition ${
+                          answers[q.id] === val 
+                            ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-md' 
+                            : 'hover:bg-[#8ec31f]/10 bg-white text-[#2d3a31]/60 border-[#008d3e]/10'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 px-1 font-semibold">
+                    <span>1: 極無信心</span>
+                    <span>5: 極有信心</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-6">
-            {CONFIDENCE_QUESTIONS.map((q) => (
-              <div key={q.id} className="space-y-3">
-                <p className="font-bold text-[#2d3a31] text-sm leading-relaxed">{q.text}</p>
-                <div className="flex justify-between gap-1.5 md:gap-2">
-                  {[1, 2, 3, 4, 5].map(val => (
+        )}
+
+        {/* SUBSTEP 2: 第一部分：五大領域自我評估 */}
+        {subStep === 2 && (
+          <div className="space-y-6" id="step-domain-assessments">
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <span className="text-[10px] font-black tracking-widest bg-[#008d3e]/10 text-[#008d3e] px-2.5 py-1 rounded-full uppercase">第一部分</span>
+              <h3 className="text-xl font-bold text-[#008d3e] mt-2">五大領域能力自我評量</h3>
+              <p className="text-xs text-[#2d3a31]/60 mt-1 leading-relaxed">
+                綜合今日家訪照護實務，請評定您自己在各臨床照護能力維度之等級：
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {EVAL_DOMAINS.map((dom) => {
+                const mapKey = `eval_${dom.id}`;
+                const score = answers[mapKey];
+                return (
+                  <div key={dom.id} className="space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100" id={`eval-row-${dom.id}`}>
+                    <label className="block text-xs font-bold text-[#2d3a31] leading-relaxed">
+                      {dom.label}
+                    </label>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400 shrink-0">尚未</span>
+                      <div className="flex-1 flex justify-between gap-1 mx-2">
+                        {[1, 2, 3, 4, 5].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setAnswers({ ...answers, [mapKey]: val })}
+                            className={`flex-1 py-1.5 rounded-lg border font-bold text-xs transition ${
+                              score === val 
+                                ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-sm' 
+                                : 'bg-white hover:bg-[#8ec31f]/10 text-[#2d3a31]/60 border-[#008d3e]/10'
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-xs font-bold text-[#008d3e] shrink-0">獨立執行</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* SUBSTEP 3: 第二部分：指定領域深度反思 */}
+        {subStep === 3 && (
+          <div className="space-y-6" id="step-deep-reflections">
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <span className="text-[10px] font-black tracking-widest bg-[#008d3e]/10 text-[#008d3e] px-2.5 py-1 rounded-full uppercase">第二部分</span>
+              <h3 className="text-xl font-bold text-[#008d3e] mt-2">指定領域深度反思</h3>
+              <p className="text-xs text-[#2d3a31]/60 mt-1 leading-relaxed w-full">
+                請從五大領域中勾選 <strong>1~3 個</strong> 您今日最有感受、最具挑戰或最值得深思的領域，並為它們撰寫深度學習札記。
+              </p>
+            </div>
+
+            {/* Checkboxes Group */}
+            <div className="bg-[#f4f9f4]/20 p-4 rounded-xl border border-[#008d3e]/10 space-y-3" id="reflection-domains-picker">
+              <p className="text-xs font-bold text-[#008d3e]">請勾選欲進行深度反思的領域：</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {DEEP_REFLECTION_DOMAINS.map((dom) => {
+                  const isChecked = (answers.selected_domains || []).includes(dom.id);
+                  return (
                     <button
-                      key={val}
-                      onClick={() => setAnswers({...answers, [q.id]: val})}
-                      className={`flex-1 py-3.5 rounded-lg border border-[#008d3e]/10 font-bold transition text-sm ${
-                        answers[q.id] === val ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-md' : 'hover:bg-[#8ec31f]/10 bg-gray-50 text-[#2d3a31]/60'
+                      key={dom.id}
+                      type="button"
+                      onClick={() => handleDomainToggle(dom.id)}
+                      className={`flex items-center text-left gap-3 p-3 rounded-lg border text-xs font-bold transition-all ${
+                        isChecked 
+                          ? 'bg-[#008d3e]/10 border-[#008d3e] text-[#008d3e]' 
+                          : 'bg-white border-[#008d3e]/10 hover:bg-gray-50 text-[#2d3a31]/70'
                       }`}
                     >
-                      {val}
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        onChange={() => {}} 
+                        className="rounded accent-[#008d3e] pointer-events-none"
+                      />
+                      <span>{dom.label}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ))}
-            <button onClick={handleConfidenceSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold hover:bg-[#007031] transition-colors shadow-md text-sm">進入 Kolb 臨床反思撰寫</button>
+            </div>
+
+            {/* Dynamic Reflection Questions for Checked Domains */}
+            {answers.selected_domains && answers.selected_domains.length > 0 ? (
+              <div className="space-y-5" id="active-domain-inputs-box">
+                {answers.selected_domains.length > 1 && (
+                  <div className="flex gap-1.5 overflow-x-auto p-1 bg-gray-50 rounded-xl border border-gray-100 no-scrollbar">
+                    {answers.selected_domains.map((domId: string) => {
+                      const domMeta = DEEP_REFLECTION_DOMAINS.find(d => d.id === domId);
+                      const isTabActive = activeReflectionTab === domId;
+                      return (
+                        <button
+                          key={domId}
+                          type="button"
+                          onClick={() => setActiveReflectionTab(domId)}
+                          className={`flex-1 min-w-[100px] text-center py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                            isTabActive 
+                              ? 'bg-[#008d3e] text-white shadow-sm' 
+                              : 'text-[#2d3a31]/60 hover:text-[#2d3a31] hover:bg-gray-100'
+                          }`}
+                        >
+                          {domMeta?.label || domId}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {DEEP_REFLECTION_DOMAINS.filter(d => d.id === (activeReflectionTab || answers.selected_domains[0])).map((activeDom) => (
+                  <div key={activeDom.id} className="space-y-5 bg-[#f4f9f4]/5 border border-[#008d3e]/10 p-5 rounded-2xl" id={`reflection-block-${activeDom.id}`}>
+                    <div className="border-b border-[#008d3e]/10 pb-2 flex items-center justify-between">
+                      <h4 className="font-bold text-[#008d3e] text-sm">【深度反思】{activeDom.label}</h4>
+                      <span className="text-[10px] bg-[#8ec31f]/20 text-[#008d3e] font-black px-2 py-0.5 rounded-full">動態反思子題</span>
+                    </div>
+
+                    {DEEP_REFLECTION_QUESTIONS.map((q) => {
+                      const fieldKey = `deep_${activeDom.id}_${q.id}`;
+                      return (
+                        <div key={q.id} className="space-y-2" id={`group-${fieldKey}`}>
+                          <label className="block text-xs font-bold text-[#2d3a31]">
+                            {q.label} <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            value={answers[fieldKey] || ''}
+                            onChange={(e) => setAnswers({ ...answers, [fieldKey]: e.target.value })}
+                            className="w-full text-xs p-3.5 bg-white border border-[#008d3e]/15 rounded-xl focus:ring-2 focus:ring-[#8ec31f] focus:ring-offset-1 outline-none text-[#2d3a31] leading-relaxed transition-all shadow-sm placeholder:text-[#2d3a31]/25"
+                            placeholder="請避開「純描述」，聚焦於您的內在感受、事件細節與未來的醫術/醫療理念連結..."
+                            rows={3}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200" id="no-domain-fallback-text">
+                <p className="text-xs text-gray-400 font-bold">⚠️ 請至少勾選一個領域以生成深度反思題目</p>
+              </div>
+            )}
           </div>
-        </>
-      ) : (
-        <>
-          <div className="border-b border-[#008d3e]/10 pb-4">
-            <h2 className="text-2xl font-bold text-[#008d3e]">深度反思與學習札記 (Kolb Cycle)</h2>
-            <p className="text-xs text-gray-400 mt-1">用心記錄今日的寶貴經驗，能讓您的臨床成長更加深刻紮實</p>
-          </div>
-          <div className="space-y-6">
-            {REFLECTION_QUESTIONS.map((q) => (
-              <div key={q.id} className="space-y-3">
-                <p className="font-bold text-[#008d3e] text-sm">{q.text}</p>
-                <textarea 
-                  value={answers[q.id] || ''}
-                  onChange={(e) => setAnswers({...answers, [q.id]: e.target.value})}
-                  className="w-full p-4 bg-[#f4f9f4]/15 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] text-sm transition-shadow shadow-sm placeholder:text-[#2d3a31]/30"
+        )}
+
+        {/* SUBSTEP 4: 第三與第四部分：自由反思與學習總結 */}
+        {subStep === 4 && (
+          <div className="space-y-6" id="step-free-and-one-line">
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <span className="text-[10px] font-black tracking-widest bg-[#008d3e]/10 text-[#008d3e] px-2.5 py-1 rounded-full uppercase">第三與第四部分</span>
+              <h3 className="text-xl font-bold text-[#008d3e] mt-2">自由反思與學習總結</h3>
+              <p className="text-xs text-[#2d3a31]/60 mt-1 leading-relaxed">
+                讓我們從今日的片段中提煉出最核心的學習訊息(Take-home Message)。
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-2" id="group-free-reflection">
+                <label className="block text-sm font-bold text-[#2d3a31] leading-relaxed">
+                  今天整體經驗中，最讓你印象深刻或感到挑戰的是什麼？為什麼？ <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={answers.free_reflection || ''}
+                  onChange={(e) => setAnswers({ ...answers, free_reflection: e.target.value })}
+                  className="w-full text-xs p-4 bg-[#f4f9f4]/10 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] leading-relaxed transition-all shadow-sm"
+                  placeholder="可記錄您印象最深刻、最觸動或最具挑戰的片段，無論是技術面、情感面、團隊合作、患者處境，或文化與倫理衝突..."
                   rows={4}
-                  placeholder="請在此詳細抒寫您的臨床體認、醫病交往感觸與思考..."
                 />
               </div>
-            ))}
-            <button onClick={handleReflectionSubmit} className="w-full bg-[#008d3e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#007031] shadow-lg shadow-[#008d3e]/20 transition-all text-sm">提交所有反思並完成本套培訓</button>
+
+              <div className="space-y-2" id="group-one-sentence-summary">
+                <label className="block text-sm font-bold text-[#2d3a31] leading-relaxed">
+                  用一句話描述，今天的經驗如何改變或深化你對醫師角色的理解？ <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={answers.one_sentence_summary || ''}
+                  onChange={(e) => setAnswers({ ...answers, one_sentence_summary: e.target.value })}
+                  className="w-full text-xs p-4 bg-[#f4f9f4]/10 border border-[#008d3e]/10 rounded-xl focus:ring-2 focus:ring-[#8ec31f] outline-none text-[#2d3a31] leading-relaxed transition-all shadow-sm"
+                  placeholder="將今天的經驗濃縮成一句最重要的洞見，形成清晰的「學習訊息」(Learning Point)..."
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        )}
+
+        {/* SUBSTEP 5: 第五部分：情緒與心理狀態檢視 */}
+        {subStep === 5 && (
+          <div className="space-y-6" id="step-emotional-matrix">
+            <div className="border-b border-[#008d3e]/10 pb-4">
+              <span className="text-[10px] font-black tracking-widest bg-[#008d3e]/10 text-[#008d3e] px-2.5 py-1 rounded-full uppercase">第五部分</span>
+              <h3 className="text-xl font-bold text-[#008d3e] mt-2">情緒與心理狀態檢視</h3>
+              <p className="text-xs text-[#2d3a31]/60 mt-1 leading-relaxed">
+                醫療專業學習不只有知識與技能，也包含面對情緒、同理心與不確定性的能力。
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <p className="text-xs font-bold text-[#008d3e]">在今日照護過程中，您感受與體驗到下列狀態的頻率：</p>
+              
+              <div className="space-y-5" id="emotion-grids-holder">
+                {EMOTION_ITEMS.map((item) => {
+                  const stateKey = `emotion_${item.id}`;
+                  const currentFreq = answers[stateKey] || 3;
+                  return (
+                    <div key={item.id} className="space-y-2.5 bg-gray-50/50 p-4 rounded-xl border border-gray-100" id={`emotion-row-${item.id}`}>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-[#2d3a31]">{item.label}</span>
+                        <span className="text-[10px] text-[#008d3e] bg-[#008d3e]/5 font-black px-2 py-0.5 rounded">
+                          {EMOTION_FREQUENCY.find(f => f.val === currentFreq)?.label || '未選'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-1">
+                        {EMOTION_FREQUENCY.map((freq) => (
+                          <button
+                            key={freq.val}
+                            type="button"
+                            onClick={() => setAnswers({ ...answers, [stateKey]: freq.val })}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition ${
+                              currentFreq === freq.val
+                                ? 'bg-[#008d3e] border-[#008d3e] text-white shadow-sm'
+                                : 'bg-white text-[#2d3a31]/50 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {freq.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Wizard Footer Controls */}
+        <div className="flex justify-between items-center pt-4 border-t border-[#008d3e]/10 mt-4" id="survey-wizard-footer">
+          <button
+            type="button"
+            onClick={handleBack}
+            disabled={subStep === 1}
+            id="prev-btn"
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition border ${
+              subStep === 1 
+                ? 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed opacity-50' 
+                : 'border-[#008d3e]/30 text-[#008d3e] hover:bg-gray-50'
+            }`}
+          >
+            ← 上一步
+          </button>
+
+          <span className="text-xs font-bold text-[#2d3a31]/40">
+            步驟 {subStep} / 5
+          </span>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            id="next-btn"
+            className="px-6 py-2.5 bg-[#008d3e] hover:bg-[#007031] text-white font-bold rounded-xl text-xs transition shadow-md shadow-[#008d3e]/20"
+          >
+            {subStep === 5 ? '提交並完結本套培訓 ✔' : '下一頁 →'}
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }
+
 
 // --- Admin Panel ---
 function AdminPanel({ items, setItems, setView }: { items: KnowledgeItem[], setItems: (items: KnowledgeItem[]) => void, setView: (v: View) => void }) {
