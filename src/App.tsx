@@ -47,6 +47,23 @@ import {
 } from './types';
 import * as XLSX from 'xlsx';
 
+const resolveUrl = (pathStr: string): string => {
+  if (!pathStr) return '';
+  if (pathStr.startsWith('data:') || pathStr.startsWith('http://') || pathStr.startsWith('https://')) {
+    return pathStr;
+  }
+  let base = (import.meta as any).env?.BASE_URL || '/';
+  const cleanPath = pathStr.replace(/^\/+/, '');
+  if (base === './') {
+    return `./${cleanPath}`;
+  }
+  if (!base.endsWith('/')) {
+    base = base + '/';
+  }
+  return `${base}${cleanPath}`;
+};
+
+
 type View = 'dashboard' | 'knowledge' | 'prep' | 'pre-test' | 'checklist' | 'post-test' | 'admin';
 
 const getConfidenceLabel = (val: any) => {
@@ -181,14 +198,15 @@ function ModuleHeaderBanner({
       
       for (const src of candidates) {
         try {
+          const resolvedSrc = resolveUrl(src);
           const exists = await new Promise<boolean>((resolve) => {
             const img = new Image();
             img.onload = () => resolve(true);
             img.onerror = () => resolve(false);
-            img.src = src;
+            img.src = resolvedSrc;
           });
           if (exists) {
-            setPublicFallback(src);
+            setPublicFallback(resolvedSrc);
             return;
           }
         } catch (e) {
@@ -337,14 +355,15 @@ export default function App() {
       ];
       for (const src of candidates) {
         try {
+          const resolvedSrc = resolveUrl(src);
           const exists = await new Promise<boolean>((resolve) => {
             const img = new Image();
             img.onload = () => resolve(true);
             img.onerror = () => resolve(false);
-            img.src = src;
+            img.src = resolvedSrc;
           });
           if (exists) {
-            setHeroBg(src);
+            setHeroBg(resolvedSrc);
             return;
           }
         } catch (e) {
@@ -386,14 +405,15 @@ export default function App() {
       
       for (const src of candidates) {
         try {
+          const resolvedSrc = resolveUrl(src);
           const exists = await new Promise<boolean>((resolve) => {
             const img = new Image();
             img.onload = () => resolve(true);
             img.onerror = () => resolve(false);
-            img.src = src;
+            img.src = resolvedSrc;
           });
           if (exists) {
-            setLogoUrl(src);
+            setLogoUrl(resolvedSrc);
             return;
           }
         } catch (e) {
