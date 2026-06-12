@@ -18,7 +18,28 @@ class StorageService {
       localStorage.setItem(STORAGE_KEYS.KNOWLEDGE, JSON.stringify(INITIAL_KNOWLEDGE));
       return INITIAL_KNOWLEDGE;
     }
-    return JSON.parse(data);
+    
+    // Auto-sync updated INITIAL_KNOWLEDGE to existing localStorage
+    try {
+      const parsed: KnowledgeItem[] = JSON.parse(data);
+      const merged = INITIAL_KNOWLEDGE.map(def => {
+        const existing = parsed.find(p => p.id === def.id);
+        if (existing) {
+          // If title/content changed in codebase, prefer the updated codebase version
+          // to always keep standard definitions fresh
+          return def;
+        }
+        return def;
+      });
+      // Preserve any custom items added by the user
+      const custom = parsed.filter(p => !INITIAL_KNOWLEDGE.find(def => def.id === p.id));
+      const result = [...merged, ...custom];
+      localStorage.setItem(STORAGE_KEYS.KNOWLEDGE, JSON.stringify(result));
+      return result;
+    } catch (e) {
+      localStorage.setItem(STORAGE_KEYS.KNOWLEDGE, JSON.stringify(INITIAL_KNOWLEDGE));
+      return INITIAL_KNOWLEDGE;
+    }
   }
 
   saveKnowledge(items: KnowledgeItem[]) {
