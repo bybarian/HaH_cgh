@@ -1,6 +1,6 @@
 {
-  "name": "國泰醫院在宅急症照護學習網",
+  "name": "在宅照護教育訓練平台",
   "description": "醫學生在宅急症照護家訪互動學習平台，包含國泰醫院在宅急症照訓練內容、訪視評估 (HOME BASIC)、測驗與信心調查。",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

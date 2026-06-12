@@ -598,8 +598,8 @@ export default function App() {
             <Stethoscope size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#008d3e]">國泰綜合醫院</h1>
-            <p className="text-[10px] text-[#8ec31f] font-bold uppercase tracking-widest leading-none">Cathay General Hospital</p>
+            <h1 className="text-xl font-bold tracking-tight text-[#008d3e]">在宅照護教育訓練平台</h1>
+            <p className="text-[10px] text-[#8ec31f] font-bold uppercase tracking-widest leading-none">Cathay General Hospital • CGH</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -901,7 +901,7 @@ function Dashboard({
       <div className="bg-gradient-to-br from-[#008d3e] to-[#8ec31f] rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-[#008d3e]/20 transition-all duration-500">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold mb-2">在宅照護教育訓練</h2>
+            <h2 className="text-3xl font-bold mb-2">在宅照護教育訓練平台</h2>
             <p className="text-[#f4f9f4] max-w-md opacity-90 text-sm leading-relaxed">
               本平台專為國泰醫院在宅參訪之培訓學生/學員設計，引導您完成各階段學習，並可自動彙整為 Excel 歷程檔案。
             </p>
