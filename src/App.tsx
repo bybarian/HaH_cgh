@@ -161,6 +161,46 @@ function ModuleHeaderBanner({
   onClearBanner: (id: string) => void;
 }) {
   const customImg = customBanners[moduleId];
+  const [publicFallback, setPublicFallback] = useState<string | null>(null);
+
+  useEffect(() => {
+    const probeBanner = async () => {
+      const num = moduleId.replace('module-', '');
+      const candidates = [
+        `/banner-module-${num}.png`,
+        `/banner-module-${num}.jpg`,
+        `/banner-module-${num}.jpeg`,
+        `/banner-module-${num}.svg`,
+        `/banner-module-${num}.webp`,
+        `/banner-${num}.png`,
+        `/banner-${num}.jpg`,
+        `/banner-${num}.jpeg`,
+        `/banner-${num}.svg`,
+        `/banner-${num}.webp`,
+      ];
+      
+      for (const src of candidates) {
+        try {
+          const exists = await new Promise<boolean>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = src;
+          });
+          if (exists) {
+            setPublicFallback(src);
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      setPublicFallback(null);
+    };
+    probeBanner();
+  }, [moduleId]);
+
+  const activeBanner = customImg || publicFallback;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,34 +230,23 @@ function ModuleHeaderBanner({
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-[#008d3e]/15 shadow-xs group mb-6">
-      {customImg ? (
+      {activeBanner ? (
         <div className="relative w-full h-44 sm:h-52 bg-gray-100">
           <img 
-            src={customImg} 
+            src={activeBanner} 
             alt={`${title} Banner`} 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-black/25 group-hover:bg-black/40 transition-all flex items-end p-6 justify-between">
             <div className="text-white drop-shadow">
-              <span className="text-[10px] font-black tracking-widest bg-[#8ec31f] text-white px-2 py-0.5 rounded uppercase mb-1 inline-block">自訂 Banner 已啟用</span>
+              {customImg && (
+                <span className="text-[10px] font-black tracking-widest bg-[#8ec31f] text-white px-2 py-0.5 rounded uppercase mb-1 inline-block">
+                  自訂 Banner 已啟用
+                </span>
+              )}
               <h1 className="text-xl md:text-2xl font-black">{title}</h1>
               <p className="text-xs text-white/90 mt-1 font-semibold">{desc}</p>
-            </div>
-            
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4 z-20">
-              <label className="text-xs bg-black/60 hover:bg-black/80 text-white font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 border border-white/20">
-                <Upload size={12} />
-                <span>更換 Banner</span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
-              <button
-                onClick={() => onClearBanner(moduleId)}
-                className="text-xs bg-red-650/80 hover:bg-red-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 border border-red-500/20"
-              >
-                <Trash2 size={12} />
-                <span>還原預設</span>
-              </button>
             </div>
           </div>
         </div>
@@ -232,14 +261,6 @@ function ModuleHeaderBanner({
               <p className="text-xs sm:text-sm text-white/90 font-medium mt-1">{desc}</p>
             </div>
           </div>
-
-          <div className="relative z-10 self-start sm:self-center">
-            <label className="text-xs bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
-              <Upload size={13} />
-              <span>上傳自訂 Banner</span>
-              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-            </label>
-          </div>
         </div>
       )}
     </div>
@@ -251,6 +272,13 @@ export default function App() {
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, boolean>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Hero custom background state
+  const [heroBg, setHeroBg] = useState<string | null>(null);
+
+  // Logo customization states
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => localStorage.getItem('cgh_custom_logo_url') || null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(() => localStorage.getItem('cgh_custom_logo_base64') || null);
 
   // Student specific persist states
   const [studentName, setStudentName] = useState(() => localStorage.getItem('cgh_student_name') || '');
@@ -287,6 +315,95 @@ export default function App() {
   useEffect(() => {
     setKnowledge(db.getKnowledge());
   }, []);
+
+  useEffect(() => {
+    const probeHeroBg = async () => {
+      const candidates = [
+        '/hero-background.png',
+        '/hero-background.jpg',
+        '/hero-background.jpeg',
+        '/hero-background.webp',
+        '/hero-background.svg',
+        '/background.png',
+        '/background.jpg',
+        '/background.jpeg',
+        '/background.webp',
+        '/background.svg',
+        '/banner-hero.png',
+        '/banner-hero.jpg',
+        '/banner-hero.jpeg',
+        '/banner-hero.webp',
+        '/banner-hero.svg',
+      ];
+      for (const src of candidates) {
+        try {
+          const exists = await new Promise<boolean>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = src;
+          });
+          if (exists) {
+            setHeroBg(src);
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      setHeroBg(null);
+    };
+    probeHeroBg();
+  }, []);
+
+  useEffect(() => {
+    // If they have a custom base64 logo, skip probe
+    if (logoBase64) {
+      return;
+    }
+    
+    // Check if they have a manually specified custom url in localstorage
+    const customUrl = localStorage.getItem('cgh_custom_logo_url');
+    if (customUrl) {
+      setLogoUrl(customUrl);
+      return;
+    }
+
+    const probeCandidates = async () => {
+      const candidates = [
+        '/logo.png',
+        '/logo.svg',
+        '/logo.jpg',
+        '/logo.jpeg',
+        '/platform-logo.png',
+        '/platform-logo.svg',
+        '/platform-logo.jpg',
+        '/cgh-logo.png',
+        '/cgh-logo.svg',
+        '/cgh-logo.jpg',
+        '/favicon.ico'
+      ];
+      
+      for (const src of candidates) {
+        try {
+          const exists = await new Promise<boolean>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = src;
+          });
+          if (exists) {
+            setLogoUrl(src);
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    
+    probeCandidates();
+  }, [logoBase64]);
 
   useEffect(() => {
     localStorage.setItem('cgh_student_name', studentName);
@@ -509,6 +626,7 @@ export default function App() {
           setVisitDate={setVisitDate}
           learningStepStatus={learningStepStatus}
           handleExportAndEmail={handleExportAndEmail}
+          heroBg={heroBg}
         />
       );
       case 'knowledge': return (
@@ -565,10 +683,21 @@ export default function App() {
               setVisitDate={setVisitDate}
               learningStepStatus={learningStepStatus}
               handleExportAndEmail={handleExportAndEmail}
+              heroBg={heroBg}
             />
           );
         }
-        return <AdminPanel items={knowledge} setItems={setKnowledge} setView={setCurrentView} />;
+        return (
+          <AdminPanel 
+            items={knowledge} 
+            setItems={setKnowledge} 
+            setView={setCurrentView} 
+            logoUrl={logoUrl}
+            setLogoUrl={setLogoUrl}
+            logoBase64={logoBase64}
+            setLogoBase64={setLogoBase64}
+          />
+        );
       default: return (
         <Dashboard 
           setView={setCurrentView} 
@@ -580,6 +709,7 @@ export default function App() {
           setVisitDate={setVisitDate}
           learningStepStatus={learningStepStatus}
           handleExportAndEmail={handleExportAndEmail}
+          heroBg={heroBg}
         />
       );
     }
@@ -594,12 +724,20 @@ export default function App() {
           onClick={() => setCurrentView('dashboard')}
           id="brand-logo"
         >
-          <div className="bg-[#008d3e] p-2 rounded-lg text-white shadow-md">
-            <Stethoscope size={24} />
+          <div className="flex items-center justify-center bg-white border border-[#008d3e]/15 p-1.5 rounded-2xl shadow-sm min-w-[4.5rem] min-h-[4.5rem] w-18 h-18">
+            {logoBase64 ? (
+              <img src={logoBase64} alt="Custom Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
+            ) : logoUrl ? (
+              <img src={logoUrl} alt="Custom Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="bg-[#008d3e] p-3 rounded-xl text-white">
+                <Stethoscope size={38} />
+              </div>
+            )}
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#008d3e]">在宅照護教育訓練平台</h1>
-            <p className="text-[10px] text-[#8ec31f] font-bold uppercase tracking-widest leading-none">Cathay General Hospital • CGH</p>
+            <h1 className="text-xl font-bold tracking-tight text-[#008d3e]">國泰綜合醫院在宅照護教育訓練平台</h1>
+            <p className="text-[10px] text-[#8ec31f] font-bold uppercase tracking-widest leading-none">Cathay General Hospital Home-Based Care Education Platform</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -876,7 +1014,8 @@ function Dashboard({
   visitDate,
   setVisitDate,
   learningStepStatus,
-  handleExportAndEmail
+  handleExportAndEmail,
+  heroBg,
 }: { 
   setView: (v: View) => void;
   studentName: string;
@@ -887,6 +1026,7 @@ function Dashboard({
   setVisitDate: (v: string) => void;
   learningStepStatus: { preQuiz: boolean, checklist: boolean, postReflection: boolean };
   handleExportAndEmail: (name: string, date: string) => void;
+  heroBg: string | null;
 }) {
   const cards = [
     { id: 'module-1', title: '1. 在宅醫療知識庫', icon: <BookOpen className="text-[#008d3e]" />, desc: '在宅訓練：法規、適應症與模式', view: 'knowledge' as View, category: '必讀核心', completed: true },
@@ -898,10 +1038,26 @@ function Dashboard({
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-[#008d3e] to-[#8ec31f] rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-[#008d3e]/20 transition-all duration-500">
+      <div 
+        className="rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-[#008d3e]/20 transition-all duration-500 bg-slate-950"
+      >
+        {heroBg ? (
+          <div 
+            className="absolute inset-0 z-0"
+            style={{ 
+              backgroundImage: `url(${heroBg})`, 
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center',
+              opacity: 0.65
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#008d3e] to-[#8ec31f] z-0"></div>
+        )}
+        {heroBg && <div className="absolute inset-0 bg-black/15 z-0"></div>}
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold mb-2">在宅照護教育訓練平台</h2>
+            <h2 className="text-3xl font-bold mb-2">國泰綜合醫院在宅照護教育訓練平台</h2>
             <p className="text-[#f4f9f4] max-w-md opacity-90 text-sm leading-relaxed">
               本平台專為國泰醫院在宅參訪之培訓學生/學員設計，引導您完成各階段學習，並可自動彙整為 Excel 歷程檔案。
             </p>
@@ -911,7 +1067,7 @@ function Dashboard({
             <p className="font-bold">國泰醫院 教學部/急診部</p>
           </div>
         </div>
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 bg-white/20 w-64 h-64 rounded-full opacity-20 blur-3xl"></div>
+        {!heroBg && <div className="absolute top-0 right-0 -mr-16 -mt-16 bg-white/20 w-64 h-64 rounded-full opacity-20 blur-3xl"></div>}
       </div>
 
       {/* Student Profile Info Card */}
@@ -2313,7 +2469,7 @@ function PostTestSection({
 
 
 // --- Admin Panel ---
-function AdminPanel({ items, setItems, setView }: { items: KnowledgeItem[], setItems: (items: KnowledgeItem[]) => void, setView: (v: View) => void }) {
+function AdminPanel({ items, setItems, setView, logoUrl, setLogoUrl, logoBase64, setLogoBase64 }: { items: KnowledgeItem[], setItems: (items: KnowledgeItem[]) => void, setView: (v: View) => void, logoUrl: string | null, setLogoUrl: (v: string | null) => void, logoBase64: string | null, setLogoBase64: (v: string | null) => void }) {
   const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
 
   const handleSave = () => {
@@ -2357,6 +2513,139 @@ function AdminPanel({ items, setItems, setView }: { items: KnowledgeItem[], setI
         >
           新增培訓項目 +
         </button>
+      </div>
+
+      {/* Logo Customization Panel */}
+      <div className="bg-[#f4f9f4]/50 border border-[#008d3e]/15 p-5 rounded-2xl space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="p-1 px-2.5 text-[10px] bg-[#008d3e]/15 text-[#008d3e] rounded font-black">LOGO 自訂設定</span>
+          <h3 className="font-bold text-sm text-[#008d3e]">平台標題旁 Logo 與圖標自訂</h3>
+        </div>
+        
+        <p className="text-xs text-[#2d3a31]/60 leading-relaxed">
+          您可以採用以下三種便利方式之一，來更換或自訂「國泰綜合醫院在宅照護教育訓練平台」左上角顯示的 Logo 圖案：
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Method A: Upload File */}
+          <div className="bg-white p-4 rounded-xl border border-gray-100 space-y-2.5 shadow-sm">
+            <h4 className="font-bold text-xs text-[#2d3a31]">方法一：直接自瀏覽器選擇上傳圖片</h4>
+            <p className="text-[11px] text-gray-400">
+              上傳圖片檔 (PNG, SVG, JPG 等)，圖片將以 Base64 編碼快取於本機瀏覽器內並即時生效。
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <input 
+                type="file" 
+                accept="image/*" 
+                id="logo-uploader-input"
+                className="hidden" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const res = event.target?.result as string;
+                      if (res) {
+                        localStorage.setItem('cgh_custom_logo_base64', res);
+                        setLogoBase64(res);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <label 
+                htmlFor="logo-uploader-input"
+                className="cursor-pointer bg-[#008d3e] text-white text-xs px-3.5 py-2 rounded-lg font-bold hover:bg-[#007031] transition shadow-sm inline-block"
+              >
+                選擇並上傳圖片 📁
+              </label>
+              {(logoBase64 || logoUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('cgh_custom_logo_base64');
+                    localStorage.removeItem('cgh_custom_logo_url');
+                    setLogoBase64(null);
+                    setLogoUrl(null);
+                  }}
+                  className="bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 text-xs px-3.5 py-2 rounded-lg font-bold transition"
+                >
+                  重置回預設聽診器 ✖
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Method B & C: Public Directory */}
+          <div className="bg-white p-4 rounded-xl border border-gray-100 space-y-2.5 shadow-sm">
+            <h4 className="font-bold text-xs text-[#2d3a31]">方法二：指定 public 資料夾內的檔名路徑</h4>
+            <p className="text-[11px] text-gray-400">
+              您可以直接將 Logo 圖片放置於本專案的 <code>/public</code> 目錄下 (例如名為 <code>hospital-logo.svg</code>)，並在下方輸入路徑。
+              <br />
+              <b>提示：若直接將圖片命名為 <code>logo.png</code> 或是 <code>logo.svg</code> 放置於 <code>/public</code> 目錄中，不需任何設定即可自動載入！</b>
+            </p>
+            <div className="flex gap-2 pt-1">
+              <input 
+                type="text"
+                placeholder="例如: /logo.svg 或 /hospital-logo.png"
+                value={logoUrl && !logoUrl.startsWith('data:') ? logoUrl : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  localStorage.setItem('cgh_custom_logo_url', val);
+                  setLogoUrl(val || null);
+                }}
+                className="flex-1 text-xs p-2.5 border border-[#008d3e]/15 rounded-lg focus:ring-2 focus:ring-[#8ec31f] focus:border-transparent outline-none text-[#2d3a31]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Current Preview */}
+        <div className="bg-white p-3.5 rounded-xl border border-[#008d3e]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-[#008d3e]">當前 Logo 左上角預覽：</span>
+            <div className="h-12 bg-[#f4f9f4]/30 px-5 rounded-lg border border-gray-100 flex items-center justify-center">
+              {logoBase64 ? (
+                <img src={logoBase64} alt="Custom Logo" className="h-8 max-w-[150px] object-contain" referrerPolicy="no-referrer" />
+              ) : logoUrl ? (
+                <img src={logoUrl} alt="Custom Logo" className="h-8 max-w-[150px] object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="flex items-center gap-2 text-[#008d3e]">
+                  <div className="bg-[#008d3e] p-1.5 rounded-lg text-white">
+                    <Stethoscope size={18} />
+                  </div>
+                  <span className="text-xs font-bold">預設圓角聽診器</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <p className="text-[11px] text-[#2d3a31]/60 font-medium">
+            {(logoBase64 || logoUrl) ? '🟢 系統目前正渲染自訂 Logo 圖片' : '💡 系統目前正渲染預設聽診器圖標（放置圖片於 public 資料夾即會自動覆蓋）'}
+          </p>
+        </div>
+
+        {/* Banners note */}
+        <div className="mt-4 p-4.5 bg-white rounded-xl border border-dashed border-[#008d3e]/20 space-y-2">
+          <h4 className="font-bold text-xs text-[#008d3e] flex items-center gap-1.5">
+            🖼️ 平台首頁背景與模組 1 ~ 5 自訂 Banner 教學
+          </h4>
+          <p className="text-[11px] text-[#2d3a31]/75 leading-relaxed">
+            除了能在此處設定 Logo 外，平台首頁的綠色漸層背景，以及各學習模組（單元 1 ~ 5）的橫幅 Banner 也支援自動讀取 <code>/public</code> 資料夾內的圖片。
+            請直接將您的圖檔放入本專案的 <code>/public</code> 資料夾中，並命名為以下對應格式：
+          </p>
+          <ul className="list-disc list-inside text-[11px] text-[#2d3a31]/60 space-y-1 pl-2 font-mono">
+            <li><strong>首頁大 Banner 背景：</strong><code>hero-background.png</code> &nbsp;或&nbsp; <code>background.png</code></li>
+            <li>單元一：<code>banner-1.png</code> &nbsp;或&nbsp; <code>banner-module-1.png</code></li>
+            <li>單元二：<code>banner-2.png</code> &nbsp;或&nbsp; <code>banner-module-2.png</code></li>
+            <li>單元三：<code>banner-3.png</code> &nbsp;或&nbsp; <code>banner-module-3.png</code></li>
+            <li>單元四：<code>banner-4.png</code> &nbsp;或&nbsp; <code>banner-module-4.png</code></li>
+            <li>單元五：<code>banner-5.png</code> &nbsp;或&nbsp; <code>banner-module-5.png</code></li>
+          </ul>
+          <p className="text-[10px] text-[#008d3e] font-black leading-relaxed">
+            💡（支援格式：png、jpg、jpeg、svg、webp。放入同名檔案於 <code>/public</code> 中即會自動套用並顯示！）
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
