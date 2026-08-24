@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type View = 'dashboard' | 'knowledge' | 'prep' | 'pre-test' | 'checklist' | 'post-test' | 'admin';
+
 export interface KnowledgeItem {
   id: string;
   category: 'law' | 'indication' | 'treatment' | 'tool';
