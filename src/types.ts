@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type View = 'dashboard' | 'knowledge' | 'prep' | 'pre-test' | 'checklist' | 'post-test' | 'admin';
+export type View = 'dashboard' | 'knowledge' | 'prep' | 'pre-test' | 'checklist' | 'post-test';
 
 export interface KnowledgeItem {
   id: string;

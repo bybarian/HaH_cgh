@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Settings,
   Stethoscope,
   Globe,
   Languages
@@ -24,9 +23,7 @@ import { PrepSection } from './components/PrepSection';
 import { PreTestSection } from './components/PreTestSection';
 import { VisitChecklist } from './components/VisitChecklist';
 import { PostTestSection } from './components/PostTestSection';
-import { AdminPanel } from './components/AdminPanel';
 import { ExportModal } from './components/ExportModal';
-import { AdminLoginModal } from './components/AdminLoginModal';
 
 export default function App() {
   const [lang, setLang] = useState<Language>(() => {
@@ -34,10 +31,6 @@ export default function App() {
   });
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return localStorage.getItem('cgh_is_admin') === 'true';
-  });
-  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
 
   // Hero custom background state
   const [heroBg, setHeroBg] = useState<string | null>(null);
@@ -303,41 +296,6 @@ export default function App() {
           t={t}
         />
       );
-      case 'admin': 
-        if (!isAdmin) {
-          return (
-            <Dashboard 
-              setView={setCurrentView} 
-              studentName={studentName}
-              setStudentName={setStudentName}
-              patientChartNumber={patientChartNumber}
-              setPatientChartNumber={setPatientChartNumber}
-              visitDate={visitDate}
-              setVisitDate={setVisitDate}
-              learningStepStatus={learningStepStatus}
-              handleExportAndEmail={handleExportAndEmail}
-              heroBg={heroBg}
-              t={t}
-            />
-          );
-        }
-        return (
-          <AdminPanel 
-            items={knowledge} 
-            setItems={setKnowledge} 
-            setView={setCurrentView} 
-            logoUrl={logoUrl}
-            setLogoUrl={setLogoUrl}
-            logoBase64={logoBase64}
-            setLogoBase64={setLogoBase64}
-            t={t}
-            onExitAdmin={() => {
-              setIsAdmin(false);
-              localStorage.removeItem('cgh_is_admin');
-              setCurrentView('dashboard');
-            }}
-          />
-        );
       default: return (
         <Dashboard 
           setView={setCurrentView} 
@@ -423,28 +381,6 @@ export default function App() {
               {studentName} ({t.loggedInStudent})
             </div>
           )}
-
-          <button 
-            onClick={() => {
-              if (isAdmin) {
-                setCurrentView(currentView === 'admin' ? 'dashboard' : 'admin');
-              } else {
-                setShowAdminLoginModal(true);
-              }
-            }}
-            className={`p-2 rounded-xl transition-all flex items-center gap-1.5 ${
-              isAdmin 
-                ? 'bg-[#008d3e] text-white shadow-xs' 
-                : 'text-[#008d3e] hover:bg-[#8ec31f]/10 border border-[#008d3e]/20'
-            }`}
-            id="admin-button"
-            title={t.adminTitle}
-          >
-            <Settings size={18} />
-            <span className="text-xs font-bold hidden sm:inline">
-              {isAdmin ? (currentView === 'admin' ? t.backToHome : t.adminTitle) : t.adminTitle}
-            </span>
-          </button>
         </div>
       </header>
 
@@ -482,20 +418,6 @@ export default function App() {
         fileName={exportData.fileName}
         mailSubject={exportData.mailSubject}
         mailBody={exportData.mailBody}
-        t={t}
-        lang={lang}
-      />
-
-      {/* Admin PIN Login Modal */}
-      <AdminLoginModal
-        isOpen={showAdminLoginModal}
-        onClose={() => setShowAdminLoginModal(false)}
-        onSuccess={() => {
-          setIsAdmin(true);
-          localStorage.setItem('cgh_is_admin', 'true');
-          setShowAdminLoginModal(false);
-          setCurrentView('admin');
-        }}
         t={t}
         lang={lang}
       />
